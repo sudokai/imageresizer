@@ -72,8 +72,7 @@ func (api *Api) initCacheManager() {
 }
 
 func (api *Api) removeThumbnails(filePath string) {
-	api.Tiers.Walk(func(item string) error {
+	api.Tiers.Walk(func(item string) {
 		api.Thumbnails.Remove(item + "/" + filePath)
-		return nil
 	})
 }
