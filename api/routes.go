@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+const uploadSizeLimit = 50 * 1024 * 1024
+
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
@@ -118,15 +120,14 @@ func (api *Api) handleCreates() http.HandlerFunc {
 			reader = r.Body
 		}
 		filename = mux.Vars(r)["path"]
-		limitReader := io.LimitReader(reader, 50*1024*1024)
-		buf, err := ioutil.ReadAll(limitReader)
-		if err != nil {
+		buf, err := ioutil.ReadAll(io.LimitReader(reader, uploadSizeLimit))
+		if len(buf) == 0 || err != nil {
 			respondWithErr(w, http.StatusBadRequest)
 			return
 		}
-		_, err = limitReader.Read(nil)
-		if err == io.EOF {
+		if len(buf) == uploadSizeLimit {
 			respondWithErr(w, http.StatusRequestEntityTooLarge)
+			return
 		}
 		err = api.Originals.Put(filename, buf)
 		if err != nil {
