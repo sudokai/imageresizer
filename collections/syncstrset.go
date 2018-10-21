@@ -33,7 +33,7 @@ func (s *SyncStrSet) Size() int {
 }
 
 // List returns the values of the SyncStrSet as a slice
-func (s *SyncStrSet) List() []string {
+func (s *SyncStrSet) Slice() []string {
 	s.Lock()
 	defer s.Unlock()
 	keys := make([]string, len(s.vals))

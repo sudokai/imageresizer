@@ -13,6 +13,6 @@ func TestSetIntersect(t *testing.T) {
 		intersection.Contains("d") ||
 		intersection.Contains("e") ||
 		intersection.Contains("f") {
-		t.Errorf("Set contains wrong elements: %v", intersection.List())
+		t.Errorf("Set contains wrong elements: %v", intersection.Slice())
 	}
 }
