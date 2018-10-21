@@ -22,15 +22,10 @@ func respondWithImage(w http.ResponseWriter, format imagine.ImageType, data []by
 func respondWithErr(w http.ResponseWriter, statusCode int) {
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": map[string]interface{}{
-			"message": http.StatusText(statusCode),
-		},
+		"error": http.StatusText(statusCode),
 	})
 }
 
-func respondWithMsg(w http.ResponseWriter, statusCode int) {
+func respondWithStatusCode(w http.ResponseWriter, statusCode int) {
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": http.StatusText(statusCode),
-	})
 }

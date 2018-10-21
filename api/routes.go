@@ -8,18 +8,20 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
 
 func (api *Api) routes() {
-	api.HandleFunc("/{width:[0-9]+}x{height:[0-9]+}/{gravity}/{path}", api.serveThumbs()).
+	api.Handle("/favicon.ico", api.handle404())
+	api.Handle("/debug/metrics", http.DefaultServeMux)
+	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{gravity}/{path}", api.serveThumbs()).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.serveOriginals()).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.handleCreates()).Methods("POST")
 	api.HandleFunc("/{path}", api.handleDeletes()).Methods("DELETE")
-	api.Handle("/debug/metrics", http.DefaultServeMux)
 }
 
 func (api *Api) serveOriginals() http.HandlerFunc {
@@ -29,7 +31,11 @@ func (api *Api) serveOriginals() http.HandlerFunc {
 			vars := mux.Vars(r)
 			buf, err := api.Originals.Get(vars["path"])
 			if err != nil {
-				respondWithErr(w, http.StatusInternalServerError)
+				if os.IsNotExist(err) {
+					respondWithErr(w, http.StatusNotFound)
+				} else {
+					respondWithErr(w, http.StatusInternalServerError)
+				}
 				return
 			}
 			respondWithImage(w, imagine.DetermineImageType(buf), buf)
@@ -88,17 +94,22 @@ func (api *Api) handleCreates() http.HandlerFunc {
 			reader = r.Body
 		}
 		filename = mux.Vars(r)["path"]
-		buf, err := ioutil.ReadAll(io.LimitReader(reader, 50*1024*1024))
+		limitReader := io.LimitReader(reader, 50*1024*1024)
+		buf, err := ioutil.ReadAll(limitReader)
 		if err != nil {
 			respondWithErr(w, http.StatusBadRequest)
 			return
+		}
+		_, err = limitReader.Read(nil)
+		if err == io.EOF {
+			respondWithErr(w, http.StatusRequestEntityTooLarge)
 		}
 		err = api.Originals.Put(filename, buf)
 		if err != nil {
 			respondWithErr(w, http.StatusInternalServerError)
 			return
 		}
-		respondWithMsg(w, http.StatusCreated)
+		respondWithStatusCode(w, http.StatusCreated)
 	}
 }
 
@@ -113,7 +124,14 @@ func (api *Api) handleDeletes() http.HandlerFunc {
 				respondWithErr(w, http.StatusNotFound)
 			}
 			api.removeThumbnails(path)
+			respondWithStatusCode(w, http.StatusNoContent)
 		})
+	}
+}
+
+func (api *Api) handle404() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		respondWithErr(w, http.StatusNotFound)
 	}
 }
 
