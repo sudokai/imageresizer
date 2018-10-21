@@ -26,9 +26,22 @@ type Api struct {
 }
 
 func NewApi(ready chan<- bool) *Api {
+	var origStore store.Store
+	if viper.GetString("store.s3.region") != "" && viper.GetString("store.s3.bucket") != "" {
+		var err error
+		origStore, err = store.NewS3Store(
+			viper.GetString("store.s3.region"),
+			viper.GetString("store.s3.bucket"),
+		)
+		if err != nil {
+			log.Fatalln("S3 store could not be initialized")
+		}
+	} else {
+		origStore = store.NewFileStore(viper.GetString("store.file.originals"), 0)
+	}
 	api := &Api{
 		Originals: &store.CachedStore{
-			Store: store.NewFileStore(viper.GetString("store.file.originals"), 0),
+			Store: origStore,
 			Cache: store.NewFileStore(viper.GetString("store.file.cache"), 0),
 		},
 		Thumbnails: store.NewFileStore(viper.GetString("store.file.thumbnails"), 0),
