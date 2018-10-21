@@ -21,6 +21,7 @@ type Api struct {
 	Originals  *store.CachedStore
 	Thumbnails store.Cache
 	Tiers      *collections.SyncStrSet
+	Etags      *collections.SyncStrSet
 	*mux.Router
 }
 
@@ -31,7 +32,8 @@ func NewApi(ready chan<- bool) *Api {
 			Cache: store.NewFileStore(viper.GetString("store.file.cache"), 0),
 		},
 		Thumbnails: store.NewFileStore(viper.GetString("store.file.thumbnails"), 0),
-		Tiers:      collections.NewSyncStringSet(),
+		Tiers:      collections.NewSyncStrSet(),
+		Etags:      collections.NewSyncStrSet(),
 		Router:     mux.NewRouter().StrictSlash(true),
 	}
 	go api.initCacheLoader(ready)

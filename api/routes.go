@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"github.com/gorilla/mux"
+	"github.com/kailt/imageresizer/etag"
 	"github.com/kailt/imageresizer/imagine"
 	"github.com/rcrowley/go-metrics"
 	"io"
@@ -16,12 +17,23 @@ import (
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
-	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{gravity}/{path}", api.serveThumbs()).
+	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{gravity}/{path}", api.etagMiddleware(api.serveThumbs())).
 		Methods("GET", "HEAD")
-	api.HandleFunc("/{path}", api.serveOriginals()).
+	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.handleCreates()).Methods("POST")
 	api.HandleFunc("/{path}", api.handleDeletes()).Methods("DELETE")
+}
+
+func (api *Api) etagMiddleware(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ifNoneMatch := r.Header.Get("If-None-Match")
+		if ifNoneMatch != "" && api.Etags.Contains(ifNoneMatch) {
+			respondWithStatusCode(w, http.StatusNotModified)
+			return
+		}
+		h(w, r)
+	}
 }
 
 func (api *Api) serveOriginals() http.HandlerFunc {
@@ -38,7 +50,13 @@ func (api *Api) serveOriginals() http.HandlerFunc {
 				}
 				return
 			}
-			respondWithImage(w, imagine.DetermineImageType(buf), buf)
+			et := etag.Generate(buf, true)
+			api.Etags.Add(et)
+			if r.Header.Get("If-None-Match") == et {
+				respondWithStatusCode(w, http.StatusNotModified)
+				return
+			}
+			respondWithImage(w, imagine.DetermineImageType(buf), buf, et)
 		})
 	}
 }
@@ -72,7 +90,13 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 				}
 				api.Thumbnails.Put(thumbPath, thumbBuf)
 			}
-			respondWithImage(w, imagine.DetermineImageType(thumbBuf), thumbBuf)
+			et := etag.Generate(thumbBuf, true)
+			api.Etags.Add(et)
+			if r.Header.Get("If-None-Match") == et {
+				respondWithStatusCode(w, http.StatusNotModified)
+				return
+			}
+			respondWithImage(w, imagine.DetermineImageType(thumbBuf), thumbBuf, et)
 		})
 	}
 }
@@ -80,7 +104,7 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 func (api *Api) handleCreates() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
-			reader io.Reader
+			reader   io.Reader
 			filename string
 		)
 		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {

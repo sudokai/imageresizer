@@ -8,8 +8,8 @@ type SyncStrSet struct {
 	sync.Mutex
 }
 
-// NewSyncStringSet returns a new SyncStrSet
-func NewSyncStringSet() *SyncStrSet {
+// NewSyncStrSet returns a new SyncStrSet
+func NewSyncStrSet() *SyncStrSet {
 	s := &SyncStrSet{
 		vals: make(map[string]struct{}),
 	}
@@ -63,7 +63,7 @@ func (s *SyncStrSet) Contains(vals ...string) bool {
 func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 	s.Lock()
 	defer s.Unlock()
-	res := NewSyncStringSet()
+	res := NewSyncStrSet()
 	for v := range s.vals {
 		if !s2.Contains(v) {
 			continue

@@ -3,9 +3,9 @@ package collections
 import "testing"
 
 func TestSetIntersect(t *testing.T) {
-	s1 := NewSyncStringSet()
+	s1 := NewSyncStrSet()
 	s1.Add("a", "b", "c", "d")
-	s2 := NewSyncStringSet()
+	s2 := NewSyncStrSet()
 	s2.Add("b", "c", "e", "f")
 	intersection := s1.Intersect(s2)
 	if !intersection.Contains("c", "b") ||
