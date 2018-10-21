@@ -86,7 +86,7 @@ func (s *FileStore) Put(filename string, buf []byte) error {
 func (s *FileStore) Remove(filename string) error {
 	err := os.Remove(path.Join(s.root, filename))
 	if err != nil {
-		return nil
+		return err
 	}
 	p := s.metadata.Get(filename)
 	if p != nil {
