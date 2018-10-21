@@ -45,6 +45,7 @@ At the moment, only two `gravity` settings are supported:
 - Local caching of originals and thumbnails with approximate LRU eviction based on file atimes.
 - Smart cropping.
 - Image uploads and deletions.
+- S3 storage support.
 - Graceful zero-downtime upgrades/restarts.
 - 304 Not Modified responses.
 
@@ -52,7 +53,6 @@ At the moment, only two `gravity` settings are supported:
 
 In order of priority:
 
-- S3 storage support.
 - More resize operations. Eg: fit without cropping.
 - Older libvips (<8.7) compatibility.
 - WEBP and GIF support?
