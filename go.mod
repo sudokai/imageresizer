@@ -1,6 +1,7 @@
 module github.com/kailt/imageresizer
 
 require (
+	github.com/aws/aws-sdk-go v1.15.59
 	github.com/cloudflare/tableflip v0.0.0-20181019105324-78281f93d075
 	github.com/djherbis/atime v1.0.0
 	github.com/gorilla/mux v1.6.2
