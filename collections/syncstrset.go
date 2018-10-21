@@ -73,16 +73,11 @@ func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 	return res
 }
 
-// Walk iterates over the set, executing walkFn.
-// If walkFn returns a function, interrupt the walk and return the error
-func (s *SyncStrSet) Walk(walkFn func(item string) error) error {
+// Walk iterates over the set, executing walkFn in a goroutine.
+func (s *SyncStrSet) Walk(walkFn func(item string)) {
 	s.Lock()
 	defer s.Unlock()
 	for k := range s.vals {
-		err := walkFn(k)
-		if err != nil {
-			return err
-		}
+		go walkFn(k)
 	}
-	return nil
 }
