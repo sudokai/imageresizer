@@ -12,9 +12,10 @@ var mimeTypes = map[imagine.ImageType]string{
 	imagine.PNG:  "image/png",
 }
 
-func respondWithImage(w http.ResponseWriter, format imagine.ImageType, data []byte) {
+func respondWithImage(w http.ResponseWriter, format imagine.ImageType, data []byte, etag string) {
 	w.Header().Set("Content-Type", mimeTypes[format])
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.Header().Set("ETag", etag)
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }

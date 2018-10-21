@@ -46,6 +46,7 @@ At the moment, only two `gravity` settings are supported:
 - Smart cropping.
 - Image uploads and deletions.
 - Graceful zero-downtime upgrades/restarts.
+- 304 Not Modified responses.
 
 ## Roadmap
 
@@ -53,7 +54,6 @@ In order of priority:
 
 - S3 storage support.
 - More resize operations. Eg: fit without cropping.
-- 304 conditional responses.
 - Older libvips (<8.7) compatibility.
 - WEBP and GIF support?
 - Security controls for uploads and deletions?
