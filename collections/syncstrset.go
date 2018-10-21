@@ -21,7 +21,9 @@ func (s *SyncStrSet) Add(vals ...string) {
 	s.Lock()
 	defer s.Unlock()
 	for _, v := range vals {
-		s.vals[v] = struct{}{}
+		if v != "" {
+			s.vals[v] = struct{}{}
+		}
 	}
 }
 
@@ -79,5 +81,22 @@ func (s *SyncStrSet) Walk(walkFn func(item string)) {
 	defer s.Unlock()
 	for k := range s.vals {
 		go walkFn(k)
+	}
+}
+
+// Get returns a random element of the set
+func (s *SyncStrSet) Get() string {
+	s.Lock()
+	defer s.Unlock()
+	for k := range s.vals {
+		return k
+	}
+	return ""
+}
+
+// Remove removes element x from the set
+func (s *SyncStrSet) Remove(x string) {
+	if x != "" {
+		delete(s.vals, x)
 	}
 }

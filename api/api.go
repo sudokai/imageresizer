@@ -38,6 +38,7 @@ func NewApi(ready chan<- bool) *Api {
 	}
 	go api.initCacheLoader(ready)
 	api.initCacheManager()
+	api.initEtagManager()
 	api.routes()
 	return api
 }
@@ -67,6 +68,19 @@ func (api *Api) initCacheManager() {
 		for range time.Tick(50 * time.Millisecond) {
 			api.Originals.PruneCache()
 			api.Thumbnails.PruneCache()
+		}
+	}()
+}
+
+func (api *Api) initEtagManager() {
+	go func() {
+		for range time.Tick(1 * time.Second) {
+			numKeysToRemove := api.Etags.Size() - 200000
+			if numKeysToRemove > 0 {
+				for i := 0; i < numKeysToRemove; i++ {
+					api.Etags.Remove(api.Etags.Get())
+				}
+			}
 		}
 	}()
 }
