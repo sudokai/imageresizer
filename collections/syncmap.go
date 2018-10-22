@@ -4,7 +4,7 @@ import "sync"
 
 type SyncMap struct {
 	data map[string]interface{}
-	sync.Mutex
+	sync.RWMutex
 }
 
 func NewSyncMap() *SyncMap {
@@ -15,8 +15,8 @@ func NewSyncMap() *SyncMap {
 }
 
 func (sm *SyncMap) Get(key string) interface{} {
-	sm.Lock()
-	defer sm.Unlock()
+	sm.RLock()
+	defer sm.RUnlock()
 	return sm.data[key]
 }
 
@@ -33,19 +33,21 @@ func (sm *SyncMap) Remove(key string) {
 }
 
 func (sm *SyncMap) Size() int {
-	sm.Lock()
-	defer sm.Unlock()
+	sm.RLock()
+	defer sm.RUnlock()
 	return len(sm.data)
 }
 
 func (sm *SyncMap) HasKey(key string) bool {
-	sm.Lock()
-	defer sm.Unlock()
+	sm.RLock()
+	defer sm.RUnlock()
 	_, ok := sm.data[key]
 	return ok
 }
 
 func (sm *SyncMap) GetRand() interface{} {
+	sm.RLock()
+	defer sm.RUnlock()
 	for _, v := range sm.data {
 		return v
 	}

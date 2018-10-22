@@ -5,7 +5,7 @@ import "sync"
 // SyncStrSet is a collection of unique values
 type SyncStrSet struct {
 	vals map[string]struct{}
-	sync.Mutex
+	sync.RWMutex
 }
 
 // NewSyncStrSet returns a new SyncStrSet
@@ -29,15 +29,15 @@ func (s *SyncStrSet) Add(vals ...string) {
 
 // Size returns the number of elements in the SyncStrSet
 func (s *SyncStrSet) Size() int {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	return len(s.vals)
 }
 
 // List returns the values of the SyncStrSet as a slice
 func (s *SyncStrSet) Slice() []string {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	keys := make([]string, len(s.vals))
 	i := 0
 	for k := range s.vals {
@@ -49,22 +49,21 @@ func (s *SyncStrSet) Slice() []string {
 
 // Contains returns true if the value is present in the SyncStrSet
 func (s *SyncStrSet) Contains(vals ...string) bool {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	for _, v := range vals {
 		_, ok := s.vals[v]
 		if !ok {
 			return false
 		}
 	}
-
 	return true
 }
 
 // Intersect returns the intersection of the two Sets
 func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	res := NewSyncStrSet()
 	for v := range s.vals {
 		if !s2.Contains(v) {
@@ -77,8 +76,8 @@ func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 
 // Walk iterates over the set, executing walkFn in a goroutine.
 func (s *SyncStrSet) Walk(walkFn func(item string)) {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	for k := range s.vals {
 		go walkFn(k)
 	}
@@ -86,8 +85,8 @@ func (s *SyncStrSet) Walk(walkFn func(item string)) {
 
 // Get returns a random element of the set
 func (s *SyncStrSet) Get() string {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	for k := range s.vals {
 		return k
 	}
@@ -96,6 +95,8 @@ func (s *SyncStrSet) Get() string {
 
 // Remove removes element x from the set
 func (s *SyncStrSet) Remove(x string) {
+	s.Lock()
+	defer s.Unlock()
 	if x != "" {
 		delete(s.vals, x)
 	}
