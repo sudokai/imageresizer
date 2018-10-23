@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/cloudflare/tableflip"
 	"github.com/kailt/imageresizer/api"
-	"github.com/kailt/imageresizer/imagine"
+	"github.com/kailt/imageresizer/imager"
 	"github.com/spf13/viper"
 	"log"
 	"net/http"
@@ -35,7 +35,7 @@ func init() {
 }
 
 func main() {
-	defer imagine.ShutdownVIPS()
+	defer imager.ShutdownVIPS()
 
 	upg, err := tableflip.New(tableflip.Options{})
 	if err != nil {

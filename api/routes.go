@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/kailt/imageresizer/etag"
-	"github.com/kailt/imageresizer/imagine"
+	"github.com/kailt/imageresizer/imager"
 	"github.com/rcrowley/go-metrics"
 	"io"
 	"io/ioutil"
@@ -58,7 +58,7 @@ func (api *Api) serveOriginals() http.HandlerFunc {
 				respondWithStatusCode(w, http.StatusNotModified)
 				return
 			}
-			respondWithImage(w, imagine.GetImageType(buf), buf, et)
+			respondWithImage(w, imager.GetImageType(buf), buf, et)
 		})
 	}
 }
@@ -85,7 +85,7 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 					respondWithErr(w, http.StatusBadRequest)
 					return
 				}
-				thumbBuf, err = imagine.Resize(srcBuf, options)
+				thumbBuf, err = imager.Resize(srcBuf, options)
 				if err != nil {
 					respondWithErr(w, http.StatusInternalServerError)
 					return
@@ -98,7 +98,7 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 				respondWithStatusCode(w, http.StatusNotModified)
 				return
 			}
-			respondWithImage(w, imagine.GetImageType(thumbBuf), thumbBuf, et)
+			respondWithImage(w, imager.GetImageType(thumbBuf), thumbBuf, et)
 		})
 	}
 }
@@ -160,20 +160,20 @@ func (api *Api) handle404() http.HandlerFunc {
 	}
 }
 
-func parseParams(vars map[string]string) (imagine.Options, error) {
+func parseParams(vars map[string]string) (imager.Options, error) {
 	width, err := strconv.Atoi(vars["width"])
 	if err != nil {
-		return imagine.Options{}, err
+		return imager.Options{}, err
 	}
 	height, err := strconv.Atoi(vars["height"])
 	if err != nil {
-		return imagine.Options{}, err
+		return imager.Options{}, err
 	}
-	gravity, ok := imagine.Gravity[vars["gravity"]]
+	gravity, ok := imager.Gravity[vars["gravity"]]
 	if !ok {
-		return imagine.Options{}, errors.New("invalid gravity")
+		return imager.Options{}, errors.New("invalid gravity")
 	}
-	options := imagine.Options{
+	options := imager.Options{
 		Width:   width,
 		Height:  height,
 		Gravity: gravity,

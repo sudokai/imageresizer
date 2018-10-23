@@ -1,4 +1,4 @@
-package imagine
+package imager
 
 /*
 #cgo pkg-config: vips

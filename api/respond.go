@@ -2,17 +2,17 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/kailt/imageresizer/imagine"
+	"github.com/kailt/imageresizer/imager"
 	"net/http"
 	"strconv"
 )
 
-var mimeTypes = map[imagine.ImageType]string{
-	imagine.JPEG: "image/jpeg",
-	imagine.PNG:  "image/png",
+var mimeTypes = map[imager.ImageType]string{
+	imager.JPEG: "image/jpeg",
+	imager.PNG:  "image/png",
 }
 
-func respondWithImage(w http.ResponseWriter, format imagine.ImageType, data []byte, etag string) {
+func respondWithImage(w http.ResponseWriter, format imager.ImageType, data []byte, etag string) {
 	w.Header().Set("Content-Type", mimeTypes[format])
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	w.Header().Set("ETag", etag)
