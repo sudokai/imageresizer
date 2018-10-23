@@ -90,7 +90,7 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 					respondWithErr(w, http.StatusInternalServerError)
 					return
 				}
-				api.Thumbnails.Put(thumbPath, thumbBuf)
+				go api.Thumbnails.Put(thumbPath, thumbBuf)
 			}
 			et := etag.Generate(thumbBuf, true)
 			api.Etags.Add(et)
