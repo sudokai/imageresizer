@@ -19,7 +19,7 @@ const uploadSizeLimit = 50 * 1024 * 1024
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
-	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{gravity}/{path}", api.etagMiddleware(api.serveThumbs())).
+	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{resizeOp}/{gravity}/{path}", api.etagMiddleware(api.serveThumbs())).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
@@ -69,6 +69,7 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 		t.Time(func() {
 			vars := mux.Vars(r)
 			resizeTier := vars["width"] + "x" + vars["height"] + "/" +
+				vars["resizeOp"] + "/" +
 				vars["gravity"] + "/"
 			path := vars["path"]
 			thumbPath := resizeTier + path
@@ -169,14 +170,16 @@ func parseParams(vars map[string]string) (imager.Options, error) {
 	if err != nil {
 		return imager.Options{}, err
 	}
+	resizeOp, ok := imager.ResizeOp[vars["resizeOp"]]
 	gravity, ok := imager.Gravity[vars["gravity"]]
 	if !ok {
 		return imager.Options{}, errors.New("invalid gravity")
 	}
 	options := imager.Options{
-		Width:   width,
-		Height:  height,
-		Gravity: gravity,
+		Width:    width,
+		Height:   height,
+		ResizeOp: resizeOp,
+		Gravity:  gravity,
 	}
 	return options, nil
 }

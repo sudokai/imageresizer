@@ -32,11 +32,24 @@ var Gravity = map[string]GravityType{
 	"sm": SM,
 }
 
+type ResizeOpType int
+
+const (
+	CROP ResizeOpType = iota
+	FIT
+)
+
+var ResizeOp = map[string]ResizeOpType{
+	"crop": CROP,
+	"fit":  FIT,
+}
+
 type Options struct {
-	Width   int
-	Height  int
-	Gravity GravityType
-	Quality int
+	Width    int
+	Height   int
+	ResizeOp ResizeOpType
+	Gravity  GravityType
+	Quality  int
 }
 
 func init() {
@@ -70,6 +83,23 @@ func GetImageType(buf []byte) ImageType {
 func Resize(buf []byte, options Options) ([]byte, error) {
 	defer C.vips_thread_shutdown()
 
+	if options.ResizeOp == FIT {
+		image, err := vipsImageNew(buf)
+		if err != nil {
+			return nil, err
+		}
+		width := int(C.vips_image_get_width(image))
+		height := int(C.vips_image_get_height(image))
+		if width * options.Height > options.Width * height {
+			// aspect ratio of original image is bigger than target aspect ratio
+			// shrink height
+			options.Height = options.Width * height / width
+		} else {
+			options.Width = width * options.Height / height
+		}
+		C.g_object_unref(C.gpointer(image))
+	}
+
 	image, err := vipsThumbnail(buf, options.Width, options.Height, options.Gravity)
 	if err != nil {
 		return nil, err
@@ -82,6 +112,19 @@ func Resize(buf []byte, options Options) ([]byte, error) {
 	}
 
 	return thumbBuf, nil
+}
+
+func vipsImageNew(buf []byte) (*C.VipsImage, error) {
+	var image *C.VipsImage
+	err := C.vips_image_new_cgo(
+		C.int(GetImageType(buf)),
+		unsafe.Pointer(&buf[0]),
+		C.size_t(len(buf)),
+		&image)
+	if err != 0 {
+		return nil, vipsError()
+	}
+	return image, nil
 }
 
 func vipsThumbnail(buf []byte, width int, height int, gravity GravityType) (*C.VipsImage, error) {

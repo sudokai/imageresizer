@@ -32,8 +32,12 @@ make
 URL format:
 
 ```
-/{width:[0-9]+}x{height:[0-9]+}/{gravity}/{path}
+/{width:[0-9]+}x{height:[0-9]+}/{resizeOp}/{gravity}/{path}
 ```
+
+Supported resize operations (`resizeOp`):
+- `crop`: resize cropping the edges.
+- `fit`: resize without cropping (make image smaller if needed).
 
 At the moment, only two `gravity` settings are supported:
 - `sm`: smart
@@ -53,7 +57,7 @@ At the moment, only two `gravity` settings are supported:
 
 In order of priority:
 
-- More resize operations. Eg: fit without cropping.
+- More resize operations.
 - Older libvips (<8.7) compatibility.
 - WEBP and GIF support?
 - Security controls for uploads and deletions?
