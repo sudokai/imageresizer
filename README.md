@@ -44,7 +44,7 @@ At the moment, only two `gravity` settings are supported:
 - `sm`: smart
 - `ce`: center
 
-Supported extend settings (fit then extend edges until target size):
+Supported `extend` settings (fit then extend edges until target size):
 - `0`: do not extend image
 - `n`: extend the image using the nearest edge pixels
 - `rrggbb`: rgb color in hex format, e.g. ffdea5.
@@ -63,7 +63,6 @@ Supported extend settings (fit then extend edges until target size):
 
 In order of priority:
 
-- More resize operations.
 - Older libvips (<8.7) compatibility.
 - WEBP and GIF support?
 - Security controls for uploads and deletions?
