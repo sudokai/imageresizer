@@ -99,7 +99,7 @@ func (s *FileStore) Remove(filename string) error {
 
 func (s *FileStore) PruneCache() error {
 	var oldest *file
-	if s.maxSize <= 0 || s.size <= s.maxSize {
+	if s.maxSize <= 0 || atomic.LoadInt64(&s.size) <= s.maxSize {
 		return nil
 	}
 	for i := 0; i < 5; i++ {
