@@ -32,16 +32,22 @@ make
 URL format:
 
 ```
-/{width:[0-9]+}x{height:[0-9]+}/{resizeOp}/{gravity}/{path}
+/{width:[0-9]+}x{height:[0-9]+}/crop/{gravity}/{path}
+/{width:[0-9]+}x{height:[0-9]+}/fit/{extend}/{path}
 ```
 
-Supported resize operations (`resizeOp`):
+Supported resize operations:
 - `crop`: resize cropping the edges.
 - `fit`: resize without cropping (make image smaller if needed).
 
 At the moment, only two `gravity` settings are supported:
 - `sm`: smart
 - `ce`: center
+
+Supported extend settings (fit then extend edges until target size):
+- `0`: do not extend image
+- `n`: extend the image using the nearest edge pixels
+- `rrggbb`: rgb color in hex format, e.g. ffdea5.
 
 ## Features
 

@@ -50,3 +50,15 @@ int vips_image_new_cgo(int imageType, void *buf, size_t len, VipsImage **out) {
     }
     return err;
 }
+
+int vips_embed_background_cgo(VipsImage *in, VipsImage **out, int x, int y, int width, int height, double *bg) {
+    int err = 1;
+    VipsArrayDouble *background = vips_array_double_new(bg, 3);
+    err = vips_embed(in, out, x, y, width, height, "extend", VIPS_EXTEND_BACKGROUND, "background", background, NULL);
+    vips_area_unref(VIPS_AREA(background));
+    return err;
+}
+
+int vips_embed_copy_cgo(VipsImage *in, VipsImage **out, int x, int y, int width, int height) {
+    return vips_embed(in, out, x, y, width, height, "extend", VIPS_EXTEND_COPY, NULL);
+}

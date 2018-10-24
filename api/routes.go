@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/hex"
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/kailt/imageresizer/etag"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 const uploadSizeLimit = 50 * 1024 * 1024
@@ -19,7 +21,7 @@ const uploadSizeLimit = 50 * 1024 * 1024
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
-	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{resizeOp}/{gravity}/{path}", api.etagMiddleware(api.serveThumbs())).
+	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
@@ -70,7 +72,7 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 			vars := mux.Vars(r)
 			resizeTier := vars["width"] + "x" + vars["height"] + "/" +
 				vars["resizeOp"] + "/" +
-				vars["gravity"] + "/"
+				vars["options"] + "/"
 			path := vars["path"]
 			thumbPath := resizeTier + path
 			api.Tiers.Add(resizeTier)
@@ -171,15 +173,51 @@ func parseParams(vars map[string]string) (imager.Options, error) {
 		return imager.Options{}, err
 	}
 	resizeOp, ok := imager.ResizeOp[vars["resizeOp"]]
-	gravity, ok := imager.Gravity[vars["gravity"]]
 	if !ok {
-		return imager.Options{}, errors.New("invalid gravity")
+		return imager.Options{}, errors.New("invalid resizeOp")
 	}
 	options := imager.Options{
 		Width:    width,
 		Height:   height,
 		ResizeOp: resizeOp,
-		Gravity:  gravity,
 	}
+	switch resizeOp {
+	case imager.CROP:
+		gravity, ok := imager.Gravity[vars["options"]]
+		if !ok {
+			return imager.Options{}, errors.New("invalid gravity")
+		}
+		options.Gravity = gravity
+	case imager.FIT:
+		extend := vars["options"]
+		if extend == "n" {
+			options.Extend = imager.NEAREST
+		} else if utf8.RuneCountInString(extend) == 6 { // hex rgb
+			rgb, err := decodeHexRGB(extend)
+			if err != nil {
+				return imager.Options{}, err
+			}
+			options.Extend = imager.BACKGROUND
+			options.ExtendBackground = rgb
+		}
+	}
+
 	return options, nil
+}
+
+func decodeHexRGB(hexRGB string) ([]float64, error) {
+	runes := []rune(hexRGB)
+	var (
+		rgb []float64
+		buf []byte
+		err error
+	)
+	for i := 0; i < 3; i++ {
+		buf, err = hex.DecodeString(string(runes[i*2 : i*2+2]))
+		if err != nil {
+			return nil, errors.New("invalid color")
+		}
+		rgb = append(rgb, float64(buf[0]))
+	}
+	return rgb, nil
 }
