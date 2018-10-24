@@ -44,12 +44,22 @@ var ResizeOp = map[string]ResizeOpType{
 	"fit":  FIT,
 }
 
+type ExtendType int
+
+const (
+	NOOP ExtendType = iota
+	NEAREST
+	BACKGROUND
+)
+
 type Options struct {
-	Width    int
-	Height   int
-	ResizeOp ResizeOpType
-	Gravity  GravityType
-	Quality  int
+	Width            int
+	Height           int
+	ResizeOp         ResizeOpType
+	Gravity          GravityType
+	Quality          int
+	Extend           ExtendType
+	ExtendBackground []float64
 }
 
 func init() {
@@ -83,19 +93,22 @@ func GetImageType(buf []byte) ImageType {
 func Resize(buf []byte, options Options) ([]byte, error) {
 	defer C.vips_thread_shutdown()
 
+	var iWidth, iHeight, origOWidth, origOHeight int
 	if options.ResizeOp == FIT {
 		image, err := vipsImageNew(buf) // this is efficient because vips only reads bytes as needed
 		if err != nil {
 			return nil, err
 		}
-		width := int(C.vips_image_get_width(image))
-		height := int(C.vips_image_get_height(image))
-		if width * options.Height > options.Width * height {
+		iWidth = int(C.vips_image_get_width(image))
+		iHeight = int(C.vips_image_get_height(image))
+		origOWidth = options.Width
+		origOHeight = options.Height
+		if iWidth*options.Height > options.Width*iHeight {
 			// aspect ratio of original image is bigger than target aspect ratio
 			// shrink height
-			options.Height = options.Width * height / width
+			options.Height = options.Width * iHeight / iWidth
 		} else {
-			options.Width = width * options.Height / height
+			options.Width = iWidth * options.Height / iHeight
 		}
 		C.g_object_unref(C.gpointer(image))
 	}
@@ -106,12 +119,58 @@ func Resize(buf []byte, options Options) ([]byte, error) {
 	}
 	defer C.g_object_unref(C.gpointer(image))
 
+	if options.Extend != NOOP {
+		x := (origOWidth - options.Width) / 2
+		y := (origOHeight - options.Height) / 2
+		image, err = vipsEmbed(image, x, y, origOWidth, origOHeight, options.Extend, options.ExtendBackground)
+		if err != nil {
+			return nil, err
+		}
+		defer C.g_object_unref(C.gpointer(image))
+	}
+
 	thumbBuf, err := vipsSave(GetImageType(buf), image)
 	if err != nil {
 		return nil, err
 	}
 
 	return thumbBuf, nil
+}
+
+func vipsEmbed(
+	in *C.VipsImage,
+	x int,
+	y int,
+	width int,
+	height int,
+	extend ExtendType,
+	bg []float64) (*C.VipsImage, error) {
+
+	var image *C.VipsImage
+	var err C.int = 1
+	if extend == NEAREST {
+		err = C.vips_embed_copy_cgo(
+			in,
+			&image,
+			C.int(x),
+			C.int(y),
+			C.int(width),
+			C.int(height))
+	} else if extend == BACKGROUND {
+		err = C.vips_embed_background_cgo(
+			in,
+			&image,
+			C.int(x),
+			C.int(y),
+			C.int(width),
+			C.int(height),
+			(*C.double)(&bg[0]))
+	}
+
+	if err != 0 {
+		return nil, vipsError()
+	}
+	return image, nil
 }
 
 func vipsImageNew(buf []byte) (*C.VipsImage, error) {
