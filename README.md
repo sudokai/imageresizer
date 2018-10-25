@@ -22,7 +22,19 @@ such as the one I work for:
 
 Building and running the code:
 
-Install `libvips`.
+Install `libvips` (minimum required version is **v8.5**, due to the fact that 
+we use `vips_thumbnail_buffer` and `libvips`' new sequential mode).
+
+- Windows: https://jcupitt.github.io/libvips/install.html
+- Mac: `brew install libvips`
+- Ubuntu 18.10: you will need `libvips-dev`.
+- Debian: `libvips-dev` from `testing` or `unstable`. [How to install packages from Debian testing.](https://we.riseup.net/debian/installing-testing-packages-on-stable)
+- Fedora 27+: `vips`
+
+If you run an older version or another distro: just compile `libvips` following the official instructions (very easy to do, it takes 60 seconds):
+
+[Building libvips from a source tarball](https://jcupitt.github.io/libvips/install.html)
+
 Then: 
 ```bash
 make
@@ -63,9 +75,14 @@ Supported `extend` settings (fit then extend edges until target size):
 
 In order of priority:
 
-- Older libvips (<8.7) compatibility.
+- Older libvips (<8.5) compatibility.
 - WEBP and GIF support?
 - Security controls for uploads and deletions?
 - Secure links?
 - Cache sharding.
 - LFU instead of LRU.
+
+
+## Acknowledgements
+
+* [libvips](https://github.com/libvips/libvips): a fast image processing library with low memory needs.
