@@ -26,7 +26,7 @@ Install `libvips` (minimum required version is **v8.5**, due to the fact that
 we use `vips_thumbnail_buffer` and `libvips`' new sequential mode).
 
 - Windows: https://jcupitt.github.io/libvips/install.html
-- Mac: `brew install libvips`
+- Mac: `brew install vips`
 - Ubuntu 18.10: you will need `libvips-dev`.
 - Debian: `libvips-dev` from `testing` or `unstable`. [How to install packages from Debian testing.](https://we.riseup.net/debian/installing-testing-packages-on-stable)
 - Fedora 27+: `vips`
