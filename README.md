@@ -53,8 +53,8 @@ Supported resize operations:
 - `fit`: resize without cropping (make image smaller if needed).
 
 At the moment, only two `gravity` settings are supported:
-- `sm`: smart
-- `ce`: center
+- `s`: smart
+- `c`: center
 
 Supported `extend` settings (fit then extend edges until target size):
 - `0`: do not extend image

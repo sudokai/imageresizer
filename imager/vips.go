@@ -23,13 +23,13 @@ const (
 type GravityType int
 
 const (
-	CE GravityType = iota + 1
-	SM
+	C GravityType = iota + 1
+	S
 )
 
 var Gravity = map[string]GravityType{
-	"ce": CE,
-	"sm": SM,
+	"c": C,
+	"s": S,
 }
 
 type ResizeOpType int
@@ -187,7 +187,7 @@ func vipsImageNew(buf []byte) (*C.VipsImage, error) {
 }
 
 func vipsThumbnail(buf []byte, width int, height int, gravity GravityType) (*C.VipsImage, error) {
-	smart := gravity == SM
+	smart := gravity == S
 	cSmart := C.int(0)
 	if smart {
 		cSmart = C.int(1)
