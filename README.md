@@ -35,7 +35,11 @@ If you run an older version or another distro: just compile `libvips` following 
 
 [Building libvips from a source tarball](https://jcupitt.github.io/libvips/install.html)
 
-Then: 
+Then:
+
+This project uses Go 1.11's new go modules, if you don't have Go 1.11 yet,
+run `make dep` to get the dependencies first.
+
 ```bash
 make
 ./imageresizer
