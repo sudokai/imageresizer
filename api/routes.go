@@ -3,10 +3,7 @@ package api
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/gorilla/mux"
-	"github.com/kailt/imageresizer/etag"
-	"github.com/kailt/imageresizer/imager"
-	"github.com/rcrowley/go-metrics"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/gorilla/mux"
+	"github.com/kailt/imageresizer/etag"
+	"github.com/kailt/imageresizer/imager"
+	"github.com/rcrowley/go-metrics"
 )
 
 const uploadSizeLimit = 50 * 1024 * 1024
@@ -21,6 +23,8 @@ const uploadSizeLimit = 50 * 1024 * 1024
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
+	// shortcut
+	api.HandleFunc("/{width:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
 	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
@@ -70,9 +74,10 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 		t := metrics.GetOrRegisterTimer("api.thumbs.latency", nil)
 		t.Time(func() {
 			vars := mux.Vars(r)
-			resizeTier := vars["width"] + "x" + vars["height"] + "/" +
-				vars["resizeOp"] + "/" +
-				vars["options"] + "/"
+			if _, ok := vars["height"]; !ok {
+				vars["height"] = vars["width"]
+			}
+			resizeTier := fmt.Sprintf("%sx%s/%s/%s", vars["width"], vars["height"], vars["resizeOp"], vars["options"])
 			path := vars["path"]
 			thumbPath := resizeTier + path
 			api.Tiers.Add(resizeTier)
