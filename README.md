@@ -75,6 +75,15 @@ Supported `extend` settings (fit then extend edges until target size):
 - Graceful zero-downtime upgrades/restarts.
 - 304 Not Modified responses.
 
+## Examples
+
+Photo | Result
+------|--------
+[Original](https://unsplash.com/photos/BqD0Id4qemc) (3456×5184) | ![Original](./testdata/natasha-kasim-708827-unsplash.jpg)
+`300/crop/s` | ![300x300 smart crop](./testdata/300x300/crop/s/natasha-kasim-708827-unsplash.jpg)
+`500/fit/000000` | ![500x500 fit](./testdata/500x500/fit/000000/natasha-kasim-708827-unsplash.jpg)
+
+
 ## Roadmap
 
 In order of priority:
