@@ -25,7 +25,7 @@ int vips_save_buffer_cgo(int imageType, VipsImage *in, void **buf, size_t *len) 
 int vips_thumbnail_cgo(void *buf, size_t len, VipsImage **out, int width, int height, int smart) {
     VipsInteresting crop = VIPS_INTERESTING_CENTRE;
     if (smart > 0) {
-        crop = VIPS_INTERESTING_ATTENTION;
+        crop = VIPS_INTERESTING_ENTROPY;
     }
     return vips_thumbnail_buffer(
         buf,
