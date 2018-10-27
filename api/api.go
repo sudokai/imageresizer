@@ -1,15 +1,17 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/kailt/imageresizer/collections"
-	"github.com/kailt/imageresizer/store"
-	"github.com/rcrowley/go-metrics"
-	"github.com/rcrowley/go-metrics/exp"
-	"github.com/spf13/viper"
 	"log"
 	"path"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/mux"
+	"github.com/kailt/imageresizer/collections"
+	"github.com/kailt/imageresizer/store"
+	metrics "github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics/exp"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -18,10 +20,11 @@ func init() {
 
 // Api type embeds a router
 type Api struct {
-	Originals  *store.CachedStore
-	Thumbnails store.Cache
-	Tiers      *collections.SyncStrSet
-	Etags      *collections.SyncStrSet
+	Originals   *store.CachedStore
+	Thumbnails  store.Cache
+	Tiers       *collections.SyncStrSet
+	Etags       *collections.SyncStrSet
+	FileWatcher *fsnotify.Watcher
 	*mux.Router
 }
 
@@ -53,6 +56,7 @@ func NewApi(ready chan<- bool) *Api {
 	api.initCacheManager()
 	api.initEtagManager()
 	api.routes()
+	api.newFileWatcher()
 	return api
 }
 

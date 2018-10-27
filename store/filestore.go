@@ -1,8 +1,6 @@
 package store
 
 import (
-	"github.com/djherbis/atime"
-	"github.com/kailt/imageresizer/collections"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -10,6 +8,9 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/djherbis/atime"
+	"github.com/kailt/imageresizer/collections"
 )
 import "path"
 
