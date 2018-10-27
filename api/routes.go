@@ -77,9 +77,13 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 			if _, ok := vars["height"]; !ok {
 				vars["height"] = vars["width"]
 			}
-			resizeTier := fmt.Sprintf("%sx%s/%s/%s", vars["width"], vars["height"], vars["resizeOp"], vars["options"])
+			resizeTier := fmt.Sprintf("%sx%s/%s/%s",
+				vars["width"],
+				vars["height"],
+				vars["resizeOp"],
+				vars["options"])
 			path := vars["path"]
-			thumbPath := resizeTier + path
+			thumbPath := resizeTier + "/" + path
 			api.Tiers.Add(resizeTier)
 			thumbBuf, err := api.Thumbnails.Get(thumbPath)
 			if err != nil {
