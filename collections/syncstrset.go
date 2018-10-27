@@ -79,7 +79,9 @@ func (s *SyncStrSet) Walk(walkFn func(item string)) {
 	s.RLock()
 	defer s.RUnlock()
 	for k := range s.vals {
-		go walkFn(k)
+		s.RUnlock()
+		walkFn(k)
+		s.RLock()
 	}
 }
 
