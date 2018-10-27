@@ -24,8 +24,8 @@ func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
 	// shortcut
-	api.HandleFunc("/{width:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).
+	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
+	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
