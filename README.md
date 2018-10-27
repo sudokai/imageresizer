@@ -62,8 +62,7 @@ At the moment, only two `gravity` settings are supported:
 
 Supported `extend` settings (fit then extend edges until target size):
 - `0`: do not extend image
-- `n`: extend the image using the nearest edge pixels
-- `rrggbb`: rgb color in hex format, e.g. ffdea5.
+- `rrggbb`: rgb color in hex format, e.g. `ffdea5`.
 
 ## Features
 

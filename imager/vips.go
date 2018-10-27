@@ -48,7 +48,6 @@ type ExtendType int
 
 const (
 	NOOP ExtendType = iota
-	NEAREST
 	BACKGROUND
 )
 
@@ -148,15 +147,7 @@ func vipsEmbed(
 
 	var image *C.VipsImage
 	var err C.int = 1
-	if extend == NEAREST {
-		err = C.vips_embed_copy_cgo(
-			in,
-			&image,
-			C.int(x),
-			C.int(y),
-			C.int(width),
-			C.int(height))
-	} else if extend == BACKGROUND {
+	if extend == BACKGROUND {
 		err = C.vips_embed_background_cgo(
 			in,
 			&image,

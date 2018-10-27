@@ -200,9 +200,7 @@ func parseParams(vars map[string]string) (imager.Options, error) {
 		options.Gravity = gravity
 	case imager.FIT:
 		extend := vars["options"]
-		if extend == "n" {
-			options.Extend = imager.NEAREST
-		} else if utf8.RuneCountInString(extend) == 6 { // hex rgb
+		if utf8.RuneCountInString(extend) == 6 { // hex rgb
 			rgb, err := decodeHexRGB(extend)
 			if err != nil {
 				return imager.Options{}, err
