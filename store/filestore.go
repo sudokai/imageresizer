@@ -4,7 +4,6 @@ import (
 	"github.com/djherbis/atime"
 	"github.com/kailt/imageresizer/collections"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,10 +28,6 @@ type file struct {
 	filename string
 	atime    time.Time
 	size     int64
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }
 
 func NewFileStore(root string, maxSize int64) *FileStore {
