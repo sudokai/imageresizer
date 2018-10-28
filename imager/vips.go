@@ -70,7 +70,7 @@ func init() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	err := C.vips_init(C.CString("imagine"))
+	err := C.vips_init(C.CString("imager"))
 	if err != 0 {
 		C.vips_shutdown()
 		log.Fatalf("vips_init failed\n")
