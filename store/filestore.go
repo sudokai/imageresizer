@@ -1,9 +1,12 @@
 package store
 
 import (
+	"errors"
 	"github.com/djherbis/atime"
+	"github.com/fsnotify/fsnotify"
 	"github.com/kailt/imageresizer/collections"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -23,6 +26,8 @@ type FileStore struct {
 	metadata *collections.SyncMap
 	size     int64
 	maxSize  int64
+	watcher  *fsnotify.Watcher
+	onWatch  *collections.SyncMap
 }
 
 type file struct {
@@ -80,7 +85,7 @@ func (s *FileStore) Put(filename string, buf []byte) error {
 	size := int64(len(buf))
 	s.metadata.Put(filename, file{filename: filename, size: size, atime: time.Now()})
 	atomic.AddInt64(&s.size, size)
-	return nil
+	return s.watchTree(fullpath)
 }
 
 func (s *FileStore) Remove(filename string) error {
@@ -133,4 +138,87 @@ func (s *FileStore) LoadCache(walkFn func(item interface{}) error) error {
 		}
 		return nil
 	})
+}
+
+func (s *FileStore) Watch(done chan bool) error {
+	if s.watcher != nil {
+		return errors.New("is already watching")
+	}
+
+	watcher, err := fsnotify.NewWatcher()
+	defer watcher.Close()
+	if err != nil {
+		return err
+	}
+
+	s.watcher = watcher
+
+	var watcherErr = make(chan error, 1)
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				watcherErr <- nil
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					goto UnableContinueWatching
+				}
+				s.processEvent(event)
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					goto UnableContinueWatching
+				}
+				log.Println("error:", err)
+			}
+		}
+	UnableContinueWatching:
+		watcherErr <- errors.New("unable to continue watching")
+	}()
+
+	err = s.watchTree(s.root)
+	if err != nil {
+		return err
+	}
+
+	return <-watcherErr
+}
+
+func (s *FileStore) processEvent(event fsnotify.Event) {
+	filename := event.Name
+	filename = strings.TrimPrefix(filename, s.root)
+	switch event.Op {
+	case fsnotify.Create, fsnotify.Write:
+		_, err := s.Get(filename)
+		if err != nil {
+			log.Println(err)
+		}
+	case fsnotify.Remove, fsnotify.Rename:
+		p := s.metadata.Get(filename)
+		if p != nil {
+			m := p.(file)
+			atomic.AddInt64(&s.size, -m.size)
+			s.metadata.Remove(filename)
+		}
+	}
+}
+
+func (s *FileStore) watchTree(pathname string) error {
+	pathname = path.Dir(pathname)
+	err := filepath.Walk(pathname,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				return nil
+			}
+			if s.onWatch.HasKey(path) {
+				return nil
+			}
+			s.onWatch.Put(path, nil)
+			return s.watcher.Add(path)
+		})
+	return err
 }

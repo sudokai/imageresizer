@@ -11,3 +11,9 @@ type Cache interface {
 	LoadCache(walkFn func(item interface{}) error) error
 	PruneCache() error
 }
+
+type Watcher interface {
+	Cache
+	Watch(done chan bool) error
+	AddWatch(path string) error
+}
