@@ -131,12 +131,12 @@ func (fs *FileStore) checkDirForChilds(wacher *fsnotify.Watcher, path string) st
 	}
 
 	for _, file := range files {
-
+		fullPath := filepath.Join(path, file.Name())
 		if file.IsDir() {
-			wacher.Add(path + "/" + file.Name())
+			wacher.Add(fullPath)
 		}
 
-		return fs.checkDirForChilds(wacher, path+"/"+file.Name())
+		return fs.checkDirForChilds(wacher, fullPath)
 	}
 
 	return ""
