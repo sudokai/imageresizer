@@ -88,6 +88,8 @@ func (fs *FileStore) startSubDirectoriesFileWatcher() {
 					if fi.Mode().IsDir() {
 						watcher.Add(event.Name)
 						fs.checkDirForChilds(watcher, event.Name)
+					} else {
+						fs.provideFileMetaData(event.Name)
 					}
 				}
 
