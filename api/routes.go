@@ -13,9 +13,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/gorilla/mux"
-	"github.com/kailt/imageresizer/etag"
-	"github.com/kailt/imageresizer/imager"
-	metrics "github.com/rcrowley/go-metrics"
+	"github.com/kxlt/imageresizer/etag"
+	"github.com/kxlt/imageresizer/imager"
+	"github.com/rcrowley/go-metrics"
 )
 
 const uploadSizeLimit = 50 * 1024 * 1024
@@ -24,9 +24,10 @@ func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
 	// shortcut
-	api.HandleFunc("/{width:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/{width:[0-9]*}x{height:[0-9]*}/{resizeOp}/{options}/{path}", api.etagMiddleware(api.serveThumbs())).
-		Methods("GET", "HEAD")
+	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/{path}",
+		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
+	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/{path}",
+		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
 	api.HandleFunc("/{path}", api.handleCreates()).Methods("POST")
@@ -77,9 +78,13 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 			if _, ok := vars["height"]; !ok {
 				vars["height"] = vars["width"]
 			}
-			resizeTier := fmt.Sprintf("%sx%s/%s/%s", vars["width"], vars["height"], vars["resizeOp"], vars["options"])
+			resizeTier := fmt.Sprintf("%sx%s/%s/%s",
+				vars["width"],
+				vars["height"],
+				vars["resizeOp"],
+				vars["options"])
 			path := vars["path"]
-			thumbPath := resizeTier + path
+			thumbPath := resizeTier + "/" + path
 			api.Tiers.Add(resizeTier)
 			thumbBuf, err := api.Thumbnails.Get(thumbPath)
 			if err != nil {
@@ -196,14 +201,11 @@ func parseParams(vars map[string]string) (imager.Options, error) {
 		options.Gravity = gravity
 	case imager.FIT:
 		extend := vars["options"]
-		if extend == "n" {
-			options.Extend = imager.NEAREST
-		} else if utf8.RuneCountInString(extend) == 6 { // hex rgb
+		if utf8.RuneCountInString(extend) == 6 { // hex rgb
 			rgb, err := decodeHexRGB(extend)
 			if err != nil {
 				return imager.Options{}, err
 			}
-			options.Extend = imager.BACKGROUND
 			options.ExtendBackground = rgb
 		}
 	}

@@ -58,7 +58,3 @@ int vips_embed_background_cgo(VipsImage *in, VipsImage **out, int x, int y, int 
     vips_area_unref(VIPS_AREA(background));
     return err;
 }
-
-int vips_embed_copy_cgo(VipsImage *in, VipsImage **out, int x, int y, int width, int height) {
-    return vips_embed(in, out, x, y, width, height, "extend", VIPS_EXTEND_COPY, NULL);
-}

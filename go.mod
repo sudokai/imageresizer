@@ -1,4 +1,4 @@
-module github.com/kailt/imageresizer
+module github.com/kxlt/imageresizer
 
 require (
 	github.com/aws/aws-sdk-go v1.15.59

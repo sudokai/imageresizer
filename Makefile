@@ -17,7 +17,7 @@ run:
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)
-dep: 
+dep:
 	$(GOGET) github.com/aws/aws-sdk-go
 	$(GOGET) github.com/cloudflare/tableflip
 	$(GOGET) github.com/djherbis/atime

@@ -12,7 +12,7 @@ import (
 	"time"
 	"github.com/djherbis/atime"
 	"github.com/fsnotify/fsnotify"
-	"github.com/kailt/imageresizer/collections"
+	"github.com/kxlt/imageresizer/collections"
 )
 
 const (
@@ -31,10 +31,6 @@ type file struct {
 	filename string
 	atime    time.Time
 	size     int64
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }
 
 func NewFileStore(root string, maxSize int64) *FileStore {

@@ -1,7 +1,5 @@
 package store
 
-import "log"
-
 type CachedStore struct {
 	Store Store
 	Cache Cache
@@ -18,27 +16,21 @@ func (cs *CachedStore) Get(filename string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		cs.Cache.Put(filename, buf)
+		go cs.Cache.Put(filename, buf)
 	}
 	return buf, nil
 }
 
 func (cs *CachedStore) Put(filename string, data []byte) error {
 	if cs.Cache != nil {
-		err := cs.Cache.Put(filename, data)
-		if err != nil {
-			log.Print(err)
-		}
+		go cs.Cache.Put(filename, data)
 	}
 	return cs.Store.Put(filename, data)
 }
 
 func (cs *CachedStore) Remove(filename string) error {
 	if cs.Cache != nil {
-		err := cs.Cache.Remove(filename)
-		if err != nil {
-			log.Print(err)
-		}
+		go cs.Cache.Remove(filename)
 	}
 	return cs.Store.Remove(filename)
 }

@@ -23,13 +23,13 @@ const (
 type GravityType int
 
 const (
-	C GravityType = iota + 1
-	S
+	CENTER GravityType = iota + 1
+	SMART
 )
 
 var Gravity = map[string]GravityType{
-	"c": C,
-	"s": S,
+	"c": CENTER,
+	"s": SMART,
 }
 
 type ResizeOpType int
@@ -44,23 +44,27 @@ var ResizeOp = map[string]ResizeOpType{
 	"fit":  FIT,
 }
 
-type ExtendType int
-
-const (
-	NOOP ExtendType = iota
-	NEAREST
-	BACKGROUND
-)
-
 type Options struct {
 	Width            int
 	Height           int
 	ResizeOp         ResizeOpType
 	Gravity          GravityType
 	Quality          int
-	Extend           ExtendType
 	ExtendBackground []float64
 }
+
+type ResizeRequest struct {
+	in      []byte
+	options Options
+	out     chan *ResizeResponse
+}
+
+type ResizeResponse struct {
+	buf []byte
+	err error
+}
+
+var reqChan chan *ResizeRequest
 
 func init() {
 	runtime.LockOSThread()
@@ -70,6 +74,65 @@ func init() {
 	if err != 0 {
 		C.vips_shutdown()
 		log.Fatalf("vips_init failed\n")
+	}
+
+	reqChan = make(chan *ResizeRequest, 100)
+	for w := 0; w < runtime.NumCPU(); w++ {
+		go worker(reqChan)
+	}
+}
+
+func worker(reqChan <-chan *ResizeRequest) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	defer C.vips_thread_shutdown()
+
+	for req := range reqChan {
+		buf := req.in
+		options := req.options
+
+		var iWidth, iHeight, origOWidth, origOHeight int
+		if options.ResizeOp == FIT {
+			image, err := vipsImageNew(buf) // this is efficient because vips only reads bytes as needed
+			if err != nil {
+				req.out <- &ResizeResponse{buf: nil, err: err}
+			}
+			iWidth = int(C.vips_image_get_width(image))
+			iHeight = int(C.vips_image_get_height(image))
+			origOWidth = options.Width
+			origOHeight = options.Height
+			if iWidth*options.Height > options.Width*iHeight {
+				// aspect ratio of original image is bigger than target aspect ratio
+				// shrink height
+				options.Height = options.Width * iHeight / iWidth
+			} else {
+				options.Width = iWidth * options.Height / iHeight
+			}
+			C.g_object_unref(C.gpointer(image))
+		}
+
+		image, err := vipsThumbnail(buf, options.Width, options.Height, options.Gravity)
+		if err != nil {
+			req.out <- &ResizeResponse{buf: nil, err: err}
+		}
+
+		if len(options.ExtendBackground) > 0 {
+			prevImage := image
+			x := (origOWidth - options.Width) / 2
+			y := (origOHeight - options.Height) / 2
+			image, err = vipsEmbed(prevImage, x, y, origOWidth, origOHeight, options.ExtendBackground)
+			C.g_object_unref(C.gpointer(prevImage))
+			if err != nil {
+				req.out <- &ResizeResponse{buf: nil, err: err}
+			}
+		}
+
+		thumbBuf, err := vipsSave(GetImageType(buf), image)
+		C.g_object_unref(C.gpointer(image))
+		if err != nil {
+			req.out <- &ResizeResponse{buf: nil, err: err}
+		}
+		req.out <- &ResizeResponse{buf: thumbBuf, err: nil}
 	}
 }
 
@@ -91,50 +154,10 @@ func GetImageType(buf []byte) ImageType {
 }
 
 func Resize(buf []byte, options Options) ([]byte, error) {
-	defer C.vips_thread_shutdown()
-
-	var iWidth, iHeight, origOWidth, origOHeight int
-	if options.ResizeOp == FIT {
-		image, err := vipsImageNew(buf) // this is efficient because vips only reads bytes as needed
-		if err != nil {
-			return nil, err
-		}
-		iWidth = int(C.vips_image_get_width(image))
-		iHeight = int(C.vips_image_get_height(image))
-		origOWidth = options.Width
-		origOHeight = options.Height
-		if iWidth*options.Height > options.Width*iHeight {
-			// aspect ratio of original image is bigger than target aspect ratio
-			// shrink height
-			options.Height = options.Width * iHeight / iWidth
-		} else {
-			options.Width = iWidth * options.Height / iHeight
-		}
-		C.g_object_unref(C.gpointer(image))
-	}
-
-	image, err := vipsThumbnail(buf, options.Width, options.Height, options.Gravity)
-	if err != nil {
-		return nil, err
-	}
-	defer C.g_object_unref(C.gpointer(image))
-
-	if options.Extend != NOOP {
-		x := (origOWidth - options.Width) / 2
-		y := (origOHeight - options.Height) / 2
-		image, err = vipsEmbed(image, x, y, origOWidth, origOHeight, options.Extend, options.ExtendBackground)
-		if err != nil {
-			return nil, err
-		}
-		defer C.g_object_unref(C.gpointer(image))
-	}
-
-	thumbBuf, err := vipsSave(GetImageType(buf), image)
-	if err != nil {
-		return nil, err
-	}
-
-	return thumbBuf, nil
+	resizeReq := &ResizeRequest{in: buf, options: options, out: make(chan *ResizeResponse)}
+	reqChan <- resizeReq
+	res := <-resizeReq.out
+	return res.buf, res.err
 }
 
 func vipsEmbed(
@@ -143,30 +166,17 @@ func vipsEmbed(
 	y int,
 	width int,
 	height int,
-	extend ExtendType,
 	bg []float64) (*C.VipsImage, error) {
 
 	var image *C.VipsImage
-	var err C.int = 1
-	if extend == NEAREST {
-		err = C.vips_embed_copy_cgo(
-			in,
-			&image,
-			C.int(x),
-			C.int(y),
-			C.int(width),
-			C.int(height))
-	} else if extend == BACKGROUND {
-		err = C.vips_embed_background_cgo(
-			in,
-			&image,
-			C.int(x),
-			C.int(y),
-			C.int(width),
-			C.int(height),
-			(*C.double)(&bg[0]))
-	}
-
+	err := C.vips_embed_background_cgo(
+		in,
+		&image,
+		C.int(x),
+		C.int(y),
+		C.int(width),
+		C.int(height),
+		(*C.double)(&bg[0]))
 	if err != 0 {
 		return nil, vipsError()
 	}
@@ -187,7 +197,7 @@ func vipsImageNew(buf []byte) (*C.VipsImage, error) {
 }
 
 func vipsThumbnail(buf []byte, width int, height int, gravity GravityType) (*C.VipsImage, error) {
-	smart := gravity == S
+	smart := gravity == SMART
 	cSmart := C.int(0)
 	if smart {
 		cSmart = C.int(1)

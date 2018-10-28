@@ -62,8 +62,7 @@ At the moment, only two `gravity` settings are supported:
 
 Supported `extend` settings (fit then extend edges until target size):
 - `0`: do not extend image
-- `n`: extend the image using the nearest edge pixels
-- `rrggbb`: rgb color in hex format, e.g. ffdea5.
+- `rrggbb`: rgb color in hex format, e.g. `ffdea5`.
 
 ## Features
 
@@ -74,6 +73,15 @@ Supported `extend` settings (fit then extend edges until target size):
 - S3 storage support.
 - Graceful zero-downtime upgrades/restarts.
 - 304 Not Modified responses.
+
+## Examples
+
+Photo | Result
+------|--------
+[Original](https://unsplash.com/photos/BqD0Id4qemc) [*@natcatalyst*](https://unsplash.com/@natcatalyst) (3456×5184) | ![Original](./testdata/natasha-kasim-708827-unsplash.jpg)
+`300/crop/s` | ![300x300 smart crop](./testdata/300x300/crop/s/natasha-kasim-708827-unsplash.jpg)
+`500/fit/000000` | ![500x500 fit](./testdata/500x500/fit/000000/natasha-kasim-708827-unsplash.jpg)
+
 
 ## Roadmap
 
