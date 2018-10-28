@@ -205,7 +205,6 @@ func parseParams(vars map[string]string) (imager.Options, error) {
 			if err != nil {
 				return imager.Options{}, err
 			}
-			options.Extend = imager.BACKGROUND
 			options.ExtendBackground = rgb
 		}
 	}

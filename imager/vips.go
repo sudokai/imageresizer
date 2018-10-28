@@ -23,13 +23,13 @@ const (
 type GravityType int
 
 const (
-	C GravityType = iota + 1
-	S
+	CENTER GravityType = iota + 1
+	SMART
 )
 
 var Gravity = map[string]GravityType{
-	"c": C,
-	"s": S,
+	"c": CENTER,
+	"s": SMART,
 }
 
 type ResizeOpType int
@@ -44,20 +44,12 @@ var ResizeOp = map[string]ResizeOpType{
 	"fit":  FIT,
 }
 
-type ExtendType int
-
-const (
-	NOOP ExtendType = iota
-	BACKGROUND
-)
-
 type Options struct {
 	Width            int
 	Height           int
 	ResizeOp         ResizeOpType
 	Gravity          GravityType
 	Quality          int
-	Extend           ExtendType
 	ExtendBackground []float64
 }
 
@@ -118,10 +110,10 @@ func Resize(buf []byte, options Options) ([]byte, error) {
 	}
 	defer C.g_object_unref(C.gpointer(image))
 
-	if options.Extend != NOOP {
+	if len(options.ExtendBackground) > 0 {
 		x := (origOWidth - options.Width) / 2
 		y := (origOHeight - options.Height) / 2
-		image, err = vipsEmbed(image, x, y, origOWidth, origOHeight, options.Extend, options.ExtendBackground)
+		image, err = vipsEmbed(image, x, y, origOWidth, origOHeight, options.ExtendBackground)
 		if err != nil {
 			return nil, err
 		}
@@ -142,22 +134,17 @@ func vipsEmbed(
 	y int,
 	width int,
 	height int,
-	extend ExtendType,
 	bg []float64) (*C.VipsImage, error) {
 
 	var image *C.VipsImage
-	var err C.int = 1
-	if extend == BACKGROUND {
-		err = C.vips_embed_background_cgo(
-			in,
-			&image,
-			C.int(x),
-			C.int(y),
-			C.int(width),
-			C.int(height),
-			(*C.double)(&bg[0]))
-	}
-
+	err := C.vips_embed_background_cgo(
+		in,
+		&image,
+		C.int(x),
+		C.int(y),
+		C.int(width),
+		C.int(height),
+		(*C.double)(&bg[0]))
 	if err != 0 {
 		return nil, vipsError()
 	}
@@ -178,7 +165,7 @@ func vipsImageNew(buf []byte) (*C.VipsImage, error) {
 }
 
 func vipsThumbnail(buf []byte, width int, height int, gravity GravityType) (*C.VipsImage, error) {
-	smart := gravity == S
+	smart := gravity == SMART
 	cSmart := C.int(0)
 	if smart {
 		cSmart = C.int(1)
