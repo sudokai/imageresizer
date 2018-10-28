@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/kailt/imageresizer/collections"
-	"github.com/kailt/imageresizer/store"
+	"github.com/kxlt/imageresizer/collections"
+	"github.com/kxlt/imageresizer/store"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	"github.com/spf13/viper"

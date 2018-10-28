@@ -13,8 +13,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/gorilla/mux"
-	"github.com/kailt/imageresizer/etag"
-	"github.com/kailt/imageresizer/imager"
+	"github.com/kxlt/imageresizer/etag"
+	"github.com/kxlt/imageresizer/imager"
 	"github.com/rcrowley/go-metrics"
 )
 

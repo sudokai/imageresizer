@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/kailt/imageresizer/imager"
+	"github.com/kxlt/imageresizer/imager"
 	"net/http"
 	"strconv"
 )

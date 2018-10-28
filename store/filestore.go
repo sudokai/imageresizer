@@ -2,7 +2,7 @@ package store
 
 import (
 	"github.com/djherbis/atime"
-	"github.com/kailt/imageresizer/collections"
+	"github.com/kxlt/imageresizer/collections"
 	"io/ioutil"
 	"os"
 	"path/filepath"
