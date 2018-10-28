@@ -57,6 +57,7 @@ func (s *SyncStrSet) Contains(vals ...string) bool {
 		s.RUnlock()
 		_, ok := s.vals[v]
 		if !ok {
+			s.RLock()
 			return false
 		}
 		s.RLock()
@@ -72,6 +73,7 @@ func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 	for v := range s.vals {
 		s.RUnlock()
 		if !s2.Contains(v) {
+			s.RLock()
 			continue
 		}
 		res.Add(v)
