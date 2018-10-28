@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
 	"github.com/djherbis/atime"
 	"github.com/fsnotify/fsnotify"
 	"github.com/kailt/imageresizer/collections"
@@ -79,17 +78,7 @@ func (fs *FileStore) startSubDirectoriesFileWatcher() {
 				switch event.Op {
 
 				case fsnotify.Write:
-					buf, err := ioutil.ReadFile(event.Name)
-					if err != nil {
-						log.Fatalf(
-							"error while reading file: %s with error: %s",
-							event.Name, err)
-					}
-					size := int64(len(buf))
-
-					// update metadata
-					fs.metadata.Put(event.Name, file{filename: event.Name, size: size, atime: time.Now()})
-					atomic.AddInt64(&fs.size, size)
+					fs.provideFileMetaData(event.Name)
 
 				case fsnotify.Remove:
 					p := fs.metadata.Get(event.Name)
@@ -118,21 +107,26 @@ func (fs *FileStore) startSubDirectoriesFileWatcher() {
 	}()
 }
 
+func (fs *FileStore) provideFileMetaData(filename string) {
+	buf, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatalf(
+			"error while reading file: %s with error: %s",
+			filename, err)
+	}
+	size := int64(len(buf))
+
+	// update metadata
+	fs.metadata.Put(filename, file{filename: filename, size: size, atime: time.Now()})
+	atomic.AddInt64(&fs.size, size)
+}
+
 func (fs *FileStore) checkDirForChilds(wacher *fsnotify.Watcher, path string) string {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 
 		// if err we've got file not a dir
-		buf, err := ioutil.ReadFile(path)
-		if err != nil {
-			log.Fatalf(
-				"error while reading file: %s with error: %s",
-				path, err)
-		}
-		size := int64(len(buf))
-
-		fs.metadata.Put(path, file{filename: path, size: size, atime: time.Now()})
-		atomic.AddInt64(&fs.size, size)
+		fs.provideFileMetaData(path)
 
 		return ""
 	}
