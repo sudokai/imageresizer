@@ -2,14 +2,17 @@ package store
 
 import (
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
-	"path"
+
 	"github.com/djherbis/atime"
+	"github.com/fsnotify/fsnotify"
 	"github.com/kailt/imageresizer/collections"
 )
 
@@ -47,6 +50,71 @@ func NewFileStore(root string, maxSize int64) *FileStore {
 	fs.startSubDirectoriesFileWatcher()
 	return fs
 
+}
+
+func (fs *FileStore) startSubDirectoriesFileWatcher() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// iterate over all subdirectories under root path
+	if err := filepath.Walk(fs.root,
+		func(path string, fi os.FileInfo, err error) error {
+			if fi.Mode().IsDir() {
+				return watcher.Add(path)
+			}
+			return nil
+		}); err != nil {
+
+		log.Fatalf("ERROR: %s", err)
+	}
+
+	go func() {
+		for {
+
+			// gather events
+			select {
+			case event := <-watcher.Events:
+				switch event.Op {
+
+				case fsnotify.Write:
+					buf, err := ioutil.ReadFile(event.Name)
+					if err != nil {
+						log.Fatalf(
+							"error while reading file: %s with error: %s",
+							event.Name, err)
+					}
+					size := int64(len(buf))
+
+					// update metadata
+					fs.metadata.Put(event.Name, file{filename: event.Name, size: size, atime: time.Now()})
+					atomic.AddInt64(&fs.size, size)
+
+				case fsnotify.Remove:
+					p := fs.metadata.Get(event.Name)
+					if p != nil {
+						m := p.(file)
+						atomic.AddInt64(&fs.size, -m.size)
+						fs.metadata.Remove(event.Name)
+					}
+
+				case fsnotify.Create:
+					fi, _ := os.Stat(event.Name)
+					if fi.Mode().IsDir() {
+						watcher.Add(event.Name)
+					}
+				}
+
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+
+				log.Printf("fileWatcher error: %s", err)
+			}
+		}
+	}()
 }
 
 func (s *FileStore) Get(filename string) ([]byte, error) {
