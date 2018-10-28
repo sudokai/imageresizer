@@ -18,11 +18,11 @@ func NewSyncStrSet() *SyncStrSet {
 
 // Add adds a value to the SyncStrSet
 func (s *SyncStrSet) Add(vals ...string) {
+	s.Lock()
+	defer s.Unlock()
 	for _, v := range vals {
 		if v != "" {
-			s.Lock()
 			s.vals[v] = struct{}{}
-			s.Unlock()
 		}
 	}
 }
@@ -41,10 +41,8 @@ func (s *SyncStrSet) Slice() []string {
 	keys := make([]string, len(s.vals))
 	i := 0
 	for k := range s.vals {
-		s.RUnlock()
 		keys[i] = k
 		i++
-		s.RLock()
 	}
 	return keys
 }
@@ -54,12 +52,10 @@ func (s *SyncStrSet) Contains(vals ...string) bool {
 	s.RLock()
 	defer s.RUnlock()
 	for _, v := range vals {
-		s.RUnlock()
 		_, ok := s.vals[v]
 		if !ok {
 			return false
 		}
-		s.RLock()
 	}
 	return true
 }
@@ -70,12 +66,10 @@ func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 	defer s.RUnlock()
 	res := NewSyncStrSet()
 	for v := range s.vals {
-		s.RUnlock()
 		if !s2.Contains(v) {
 			continue
 		}
 		res.Add(v)
-		s.RLock()
 	}
 	return res
 }
