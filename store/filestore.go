@@ -3,7 +3,6 @@ package store
 import (
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
