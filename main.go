@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
 	"github.com/cloudflare/tableflip"
 	"github.com/kailt/imageresizer/api"
 	"github.com/kailt/imageresizer/imager"

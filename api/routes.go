@@ -16,7 +16,6 @@ import (
 	"github.com/kailt/imageresizer/etag"
 	"github.com/kailt/imageresizer/imager"
 	metrics "github.com/rcrowley/go-metrics"
-	"github.com/spf13/viper"
 )
 
 const uploadSizeLimit = 50 * 1024 * 1024
@@ -143,9 +142,6 @@ func (api *Api) handleCreates() http.HandlerFunc {
 			respondWithErr(w, http.StatusInternalServerError)
 			return
 		}
-
-		api.startWatchingFile(
-			viper.GetString("store.file.originals") + "/" + filename)
 
 		respondWithStatusCode(w, http.StatusCreated)
 	}

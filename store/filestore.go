@@ -8,11 +8,10 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
+	"path"
 	"github.com/djherbis/atime"
 	"github.com/kailt/imageresizer/collections"
 )
-import "path"
 
 const (
 	loadBatch         = 50
@@ -40,11 +39,14 @@ func NewFileStore(root string, maxSize int64) *FileStore {
 	if _, err := os.Stat(root); os.IsNotExist(err) {
 		os.MkdirAll(root, 0755)
 	}
-	return &FileStore{
+	fs := &FileStore{
 		root:     root,
 		metadata: collections.NewSyncMap(),
 		maxSize:  maxSize,
 	}
+	fs.startSubDirectoriesFileWatcher()
+	return fs
+
 }
 
 func (s *FileStore) Get(filename string) ([]byte, error) {
