@@ -14,6 +14,5 @@ type Cache interface {
 
 type Watcher interface {
 	Cache
-	Watch(done chan bool) error
-	AddWatch(path string) error
+	Watch() error
 }

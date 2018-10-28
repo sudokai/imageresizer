@@ -4,7 +4,7 @@ import "log"
 
 type CachedStore struct {
 	Store Store
-	Cache Cache
+	Cache Watcher
 }
 
 func (cs *CachedStore) Get(filename string) ([]byte, error) {
@@ -55,4 +55,11 @@ func (cs *CachedStore) LoadCache(walkFn func(item interface{}) error) error {
 		return nil
 	}
 	return cs.Cache.LoadCache(walkFn)
+}
+
+func (cs *CachedStore) Watch() error {
+	if cs.Cache == nil {
+		return nil
+	}
+	return cs.Cache.Watch()
 }

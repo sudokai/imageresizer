@@ -1,6 +1,7 @@
 package api
 
 import (
+	store2 "github.com/gfelixc/imageresizer/store"
 	"github.com/gorilla/mux"
 	"github.com/kailt/imageresizer/collections"
 	"github.com/kailt/imageresizer/store"
@@ -18,8 +19,8 @@ func init() {
 
 // Api type embeds a router
 type Api struct {
-	Originals  *store.CachedStore
-	Thumbnails store.Cache
+	Originals  *store2.CachedStore
+	Thumbnails store2.Watcher
 	Tiers      *collections.SyncStrSet
 	Etags      *collections.SyncStrSet
 	*mux.Router
@@ -37,14 +38,14 @@ func NewApi(ready chan<- bool) *Api {
 			log.Fatalln("S3 store could not be initialized")
 		}
 	} else {
-		origStore = store.NewFileStore(viper.GetString("store.file.originals"), 0)
+		origStore = store2.NewFileStore(viper.GetString("store.file.originals"), 0)
 	}
 	api := &Api{
-		Originals: &store.CachedStore{
+		Originals: &store2.CachedStore{
 			Store: origStore,
-			Cache: store.NewFileStore(viper.GetString("store.file.cache"), 0),
+			Cache: store2.NewFileStore(viper.GetString("store.file.cache"), 0),
 		},
-		Thumbnails: store.NewFileStore(viper.GetString("store.file.thumbnails"), 0),
+		Thumbnails: store2.NewFileStore(viper.GetString("store.file.thumbnails"), 0),
 		Tiers:      collections.NewSyncStrSet(),
 		Etags:      collections.NewSyncStrSet(),
 		Router:     mux.NewRouter().StrictSlash(true),
@@ -53,6 +54,7 @@ func NewApi(ready chan<- bool) *Api {
 	api.initCacheManager()
 	api.initEtagManager()
 	api.routes()
+	api.initWatchers()
 	return api
 }
 
@@ -102,4 +104,9 @@ func (api *Api) removeThumbnails(filePath string) {
 	api.Tiers.Walk(func(item string) {
 		api.Thumbnails.Remove(item + "/" + filePath)
 	})
+}
+
+func (api *Api) initWatchers() {
+	api.Originals.Watch()
+	api.Thumbnails.Watch()
 }

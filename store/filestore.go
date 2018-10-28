@@ -140,7 +140,7 @@ func (s *FileStore) LoadCache(walkFn func(item interface{}) error) error {
 	})
 }
 
-func (s *FileStore) Watch(done chan bool) error {
+func (s *FileStore) Watch() error {
 	if s.watcher != nil {
 		return errors.New("is already watching")
 	}
@@ -153,36 +153,25 @@ func (s *FileStore) Watch(done chan bool) error {
 
 	s.watcher = watcher
 
-	var watcherErr = make(chan error, 1)
-
 	go func() {
 		for {
 			select {
-			case <-done:
-				watcherErr <- nil
-				return
 			case event, ok := <-watcher.Events:
 				if !ok {
-					goto UnableContinueWatching
+					break
 				}
 				s.processEvent(event)
 			case err, ok := <-watcher.Errors:
 				if !ok {
-					goto UnableContinueWatching
+					break
 				}
 				log.Println("error:", err)
 			}
 		}
-	UnableContinueWatching:
-		watcherErr <- errors.New("unable to continue watching")
+		log.Println("error:",errors.New("unable to continue watching"))
 	}()
 
-	err = s.watchTree(s.root)
-	if err != nil {
-		return err
-	}
-
-	return <-watcherErr
+	return s.watchTree(s.root)
 }
 
 func (s *FileStore) processEvent(event fsnotify.Event) {
