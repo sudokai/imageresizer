@@ -103,6 +103,7 @@ func (fs *FileStore) startSubDirectoriesFileWatcher() {
 					fi, _ := os.Stat(event.Name)
 					if fi.Mode().IsDir() {
 						watcher.Add(event.Name)
+						fs.checkDirForChilds(watcher, event.Name)
 					}
 				}
 
@@ -115,6 +116,41 @@ func (fs *FileStore) startSubDirectoriesFileWatcher() {
 			}
 		}
 	}()
+}
+
+func (fs *FileStore) checkDirForChilds(wacher *fsnotify.Watcher, path string) string {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+
+		// if err we've got file not a dir
+		buf, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.Fatalf(
+				"error while reading file: %s with error: %s",
+				path, err)
+		}
+		size := int64(len(buf))
+
+		fs.metadata.Put(path, file{filename: path, size: size, atime: time.Now()})
+		atomic.AddInt64(&fs.size, size)
+
+		return ""
+	}
+
+	if len(files) == 0 {
+		return ""
+	}
+
+	for _, file := range files {
+
+		if file.IsDir() {
+			wacher.Add(path + "/" + file.Name())
+		}
+
+		return fs.checkDirForChilds(wacher, path+"/"+file.Name())
+	}
+
+	return ""
 }
 
 func (s *FileStore) Get(filename string) ([]byte, error) {
