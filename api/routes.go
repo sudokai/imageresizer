@@ -19,7 +19,7 @@ import (
 )
 
 const uploadSizeLimit = 50 * 1024 * 1024
-const pathMatch = "{path:[a-zA-Z/\\.]+}"
+const pathMatch = "{path:.+}"
 
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
