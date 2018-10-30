@@ -19,19 +19,20 @@ import (
 )
 
 const uploadSizeLimit = 50 * 1024 * 1024
+const pathMatch = "{path:.+}"
 
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
 	// shortcut
-	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/{path}",
+	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/" + pathMatch,
 		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/{path}",
+	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/" + pathMatch,
 		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/{path}", api.etagMiddleware(api.serveOriginals())).
+	api.HandleFunc("/" + pathMatch, api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
-	api.HandleFunc("/{path}", api.handleCreates()).Methods("POST")
-	api.HandleFunc("/{path}", api.handleDeletes()).Methods("DELETE")
+	api.HandleFunc("/" + pathMatch, api.handleCreates()).Methods("POST")
+	api.HandleFunc("/" + pathMatch, api.handleDeletes()).Methods("DELETE")
 }
 
 func (api *Api) etagMiddleware(h http.HandlerFunc) http.HandlerFunc {
