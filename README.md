@@ -98,9 +98,9 @@ In order of priority:
 ## Acknowledgements
 
 * [libvips/libvips](https://github.com/libvips/libvips): A fast image processing library with low memory needs.
-* [gorilla/mux](github.com/gorilla/mux): A powerful URL router and dispatcher for golang.
-* [cloudflare/tableflip](github.com/cloudflare/tableflip): Graceful process restarts in Go
-* [spf13/viper](github.com/spf13/viper): Go configuration with fangs
-* [djherbis/atime](github.com/djherbis/atime): Access Times for files
+* [gorilla/mux](https://github.com/gorilla/mux): A powerful URL router and dispatcher for golang.
+* [cloudflare/tableflip](https://github.com/cloudflare/tableflip): Graceful process restarts in Go
+* [spf13/viper](https://github.com/spf13/viper): Go configuration with fangs
+* [djherbis/atime](https://github.com/djherbis/atime): Access Times for files
 * [rcrowley/go-metrics](https://github.com/rcrowley/go-metrics): Go port of Coda Hale's Metrics library
 * [h2non/bimg](https://github.com/h2non/bimg): Small Go package for fast high-level image processing powered by libvips C library
