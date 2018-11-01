@@ -90,6 +90,9 @@ func (sm *SyncMap) HasKey(key string) bool {
 func (sm *SyncMap) GetRand() interface{} {
 	sm.RLock()
 	defer sm.RUnlock()
+	if len(sm.indexed) == 0 {
+		return nil
+	}
 	elem := sm.indexed[rand.Intn(len(sm.indexed))]
 	return sm.Get(elem.key)
 }

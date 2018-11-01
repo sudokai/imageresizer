@@ -54,6 +54,11 @@ func TestSyncMap_Remove(t *testing.T) {
 
 func TestSyncMap_GetRand(t *testing.T) {
 	sm := NewSyncMap()
+
+	if sm.GetRand() != nil {
+		t.Errorf("GetRand failed")
+	}
+
 	sm.Put("a", 0)
 	sm.Put("b", 1)
 	sm.Put("c", 2)

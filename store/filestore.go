@@ -19,7 +19,7 @@ const (
 
 type FileStore struct {
 	root     string
-	metadata *collections.SyncMap
+	metadata collections.Map
 	size     int64
 	maxSize  int64
 }
@@ -36,7 +36,7 @@ func NewFileStore(root string, maxSize int64) *FileStore {
 	}
 	return &FileStore{
 		root:     root,
-		metadata: collections.NewSyncMap(),
+		metadata: collections.NewShardedMap(256),
 		maxSize:  maxSize,
 	}
 }
@@ -97,7 +97,7 @@ func (s *FileStore) PruneCache() error {
 	if s.maxSize <= 0 || atomic.LoadInt64(&s.size) <= s.maxSize {
 		return nil
 	}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		f := s.metadata.GetRand().(file)
 		if oldest == nil || f.atime.Before(oldest.atime) {
 			oldest = &f
