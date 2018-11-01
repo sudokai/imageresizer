@@ -52,23 +52,21 @@ func (s *SyncStrSet) Slice() []string {
 // Contains returns true if the value is present in the SyncStrSet
 func (s *SyncStrSet) Contains(vals ...string) bool {
 	s.RLock()
-	defer s.RUnlock()
 	for _, v := range vals {
 		s.RUnlock()
 		_, ok := s.vals[v]
 		if !ok {
-			s.RLock()
 			return false
 		}
 		s.RLock()
 	}
+	s.RUnlock()
 	return true
 }
 
 // Intersect returns the intersection of the two Sets
 func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 	s.RLock()
-	defer s.RUnlock()
 	res := NewSyncStrSet()
 	for v := range s.vals {
 		s.RUnlock()
@@ -79,6 +77,7 @@ func (s *SyncStrSet) Intersect(s2 *SyncStrSet) *SyncStrSet {
 		res.Add(v)
 		s.RLock()
 	}
+	s.RUnlock()
 	return res
 }
 
