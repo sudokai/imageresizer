@@ -83,6 +83,43 @@ Photo | Result
 `500/fit/000000` | ![500x500 fit](./testdata/500x500/fit/000000/natasha-kasim-708827-unsplash.jpg)
 
 
+## Configuration properties
+Put your configuration properties inside a `config.properties` file in the same directory as the imageresizer executable. The config below contains the default values:
+
+```ini
+# Listen address
+server.addr=:8080
+
+# File storage settings
+local.prefix=./images/originals
+
+# S3 settings
+s3.enable=false
+s3.region={S3 region}
+s3.bucket={bucketName}
+s3.prefix="" # root path of original images
+
+# Caches
+cache.orig.enable=true
+cache.orig.path=./images/cache
+cache.orig.maxsize=1G
+cache.orig.shards=256
+cache.thumb.enable=true
+cache.thumb.path=./images/thumbnails
+cache.thumb.maxsize=1G
+cache.thumb.shards=256
+cache.loader.sleep=50
+cache.loader.files=100
+cache.loader.threshold=200
+
+# Uploads
+upload.maxsize=50M
+
+# Etag cache size (num items)
+etag.cache.enable=true
+etag.cache.maxsize=50000
+```
+
 ## Roadmap
 
 In order of priority:

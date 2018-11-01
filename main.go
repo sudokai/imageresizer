@@ -2,40 +2,35 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/cloudflare/tableflip"
 	"github.com/kxlt/imageresizer/api"
+	"github.com/kxlt/imageresizer/config"
 	"github.com/kxlt/imageresizer/imager"
 	"github.com/spf13/viper"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
 
-func init() {
-	viper.SetDefault("server.addr", ":8080")
-	viper.SetDefault("store.file.originals", "./images/originals")
-	viper.SetDefault("store.file.cache", "./images/cache")
-	viper.SetDefault("store.file.thumbnails", "./images/thumbnails")
-	viper.SetConfigFile("config.properties")
-	viper.AddConfigPath(".")
-	viper.SetEnvPrefix("IMAGERESIZER")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
-	_, err := os.Stat("config.properties")
+func main() {
+	defer imager.ShutdownVIPS()
+
+	configPath := flag.String("c", "config.properties", "configuration file path")
+	flag.Parse()
+
+	viper.SetConfigFile(*configPath)
+	_, err := os.Stat(*configPath)
 	if err == nil {
 		err := viper.ReadInConfig()
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
-}
-
-func main() {
-	defer imager.ShutdownVIPS()
+	config.RefreshConfig()
 
 	upg, err := tableflip.New(tableflip.Options{})
 	if err != nil {
@@ -56,7 +51,7 @@ func main() {
 		}
 	}()
 
-	ln, err := upg.Fds.Listen("tcp", viper.GetString("server.addr"))
+	ln, err := upg.Fds.Listen("tcp", config.C.ServerAddr)
 	if err != nil {
 		log.Fatalln("Can't listen:", err)
 	}

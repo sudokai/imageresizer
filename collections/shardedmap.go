@@ -18,7 +18,7 @@ func init() {
 // NewShardedMap returns a map with {nShards} shards.
 // {nShards} must be a power of 2
 func NewShardedMap(nShards int) *ShardedMap {
-	if nShards&(nShards-1) != 0 {
+	if nShards < 1 || nShards&(nShards-1) != 0 {
 		// nShards must be a power of 2
 		return nil
 	}

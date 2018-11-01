@@ -3,10 +3,10 @@ package api
 import (
 	"github.com/gorilla/mux"
 	"github.com/kxlt/imageresizer/collections"
+	"github.com/kxlt/imageresizer/config"
 	"github.com/kxlt/imageresizer/store"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
-	"github.com/spf13/viper"
 	"log"
 	"path"
 	"time"
@@ -18,7 +18,7 @@ func init() {
 
 // Api type embeds a router
 type Api struct {
-	Originals  *store.CachedStore
+	Originals  *store.TwoTier
 	Thumbnails store.Cache
 	Tiers      *collections.SyncStrSet
 	Etags      *collections.SyncStrSet
@@ -27,31 +27,54 @@ type Api struct {
 
 func NewApi(ready chan<- bool) *Api {
 	var origStore store.Store
-	if viper.GetString("store.s3.region") != "" && viper.GetString("store.s3.bucket") != "" {
+	if config.C.S3Enable {
 		var err error
-		origStore, err = store.NewS3Store(
-			viper.GetString("store.s3.region"),
-			viper.GetString("store.s3.bucket"),
-		)
+		origStore, err = store.NewS3Store(&store.S3Config{
+			Region:          config.C.S3Region,
+			Bucket:          config.C.S3Bucket,
+			Prefix:          config.C.S3Prefix,
+		})
 		if err != nil {
 			log.Fatalln("S3 store could not be initialized")
 		}
 	} else {
-		origStore = store.NewFileStore(viper.GetString("store.file.originals"), 0)
+		origStore = store.NewFileStore(config.C.LocalPrefix)
+	}
+	var origCache store.Cache
+	if config.C.CacheOrigEnable {
+		origCache = store.NewFileCache(
+			config.C.CacheOrigPath,
+			config.C.CacheOrigMaxSize,
+			config.C.CacheOrigShards)
+	}
+	var thumbCache store.Cache
+	if config.C.CacheThumbEnable {
+		thumbCache = store.NewFileCache(
+			config.C.CacheThumbPath,
+			config.C.CacheThumbMaxSize,
+			config.C.CacheThumbShards)
+	} else {
+		thumbCache = &store.NoopCache{}
+	}
+	var etags *collections.SyncStrSet
+	if config.C.EtagCacheEnable {
+		etags = collections.NewSyncStrSet()
 	}
 	api := &Api{
-		Originals: &store.CachedStore{
+		Originals: &store.TwoTier{
 			Store: origStore,
-			Cache: store.NewFileStore(viper.GetString("store.file.cache"), 0),
+			Cache: origCache,
 		},
-		Thumbnails: store.NewFileStore(viper.GetString("store.file.thumbnails"), 0),
+		Thumbnails: thumbCache,
 		Tiers:      collections.NewSyncStrSet(),
-		Etags:      collections.NewSyncStrSet(),
+		Etags:      etags,
 		Router:     mux.NewRouter().StrictSlash(true),
 	}
 	go api.initCacheLoader(ready)
 	api.initCacheManager()
-	api.initEtagManager()
+	if config.C.EtagCacheEnable {
+		api.initEtagManager()
+	}
 	api.routes()
 	return api
 }
@@ -88,7 +111,7 @@ func (api *Api) initCacheManager() {
 func (api *Api) initEtagManager() {
 	go func() {
 		for range time.Tick(1 * time.Second) {
-			numKeysToRemove := api.Etags.Size() - 200000
+			numKeysToRemove := api.Etags.Size() - config.C.EtagCacheMaxSize
 			if numKeysToRemove > 0 {
 				for i := 0; i < numKeysToRemove; i++ {
 					api.Etags.Remove(api.Etags.Get())

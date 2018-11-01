@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/kxlt/imageresizer/config"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -18,29 +19,30 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-const uploadSizeLimit = 50 * 1024 * 1024
 const pathMatch = "{path:.+}"
 
 func (api *Api) routes() {
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
 	// shortcut
-	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/" + pathMatch,
+	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/"+pathMatch,
 		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/" + pathMatch,
+	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/"+pathMatch,
 		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/" + pathMatch, api.etagMiddleware(api.serveOriginals())).
+	api.HandleFunc("/"+pathMatch, api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
-	api.HandleFunc("/" + pathMatch, api.handleCreates()).Methods("POST")
-	api.HandleFunc("/" + pathMatch, api.handleDeletes()).Methods("DELETE")
+	api.HandleFunc("/"+pathMatch, api.handleCreates()).Methods("POST")
+	api.HandleFunc("/"+pathMatch, api.handleDeletes()).Methods("DELETE")
 }
 
 func (api *Api) etagMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ifNoneMatch := r.Header.Get("If-None-Match")
-		if ifNoneMatch != "" && api.Etags.Contains(ifNoneMatch) {
-			respondWithStatusCode(w, http.StatusNotModified)
-			return
+		if config.C.EtagCacheEnable {
+			ifNoneMatch := r.Header.Get("If-None-Match")
+			if ifNoneMatch != "" && api.Etags.Contains(ifNoneMatch) {
+				respondWithStatusCode(w, http.StatusNotModified)
+				return
+			}
 		}
 		h(w, r)
 	}
@@ -60,13 +62,18 @@ func (api *Api) serveOriginals() http.HandlerFunc {
 				}
 				return
 			}
-			et := etag.Generate(buf, true)
-			api.Etags.Add(et)
-			if r.Header.Get("If-None-Match") == et {
-				respondWithStatusCode(w, http.StatusNotModified)
-				return
+			imgResponse := &ImageResponse{buf: buf}
+			if config.C.EtagCacheEnable {
+				etg := etag.Generate(buf, true)
+				api.Etags.Add(etg)
+				if r.Header.Get("If-None-Match") == etg {
+					respondWithStatusCode(w, http.StatusNotModified)
+					return
+				}
+				imgResponse.etag = etg
 			}
-			respondWithImage(w, imager.GetImageType(buf), buf, et)
+			imgResponse.format = imager.GetImageType(buf)
+			respondWithImage(w, imgResponse)
 		})
 	}
 }
@@ -87,8 +94,8 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 			path := vars["path"]
 			thumbPath := resizeTier + "/" + path
 			api.Tiers.Add(resizeTier)
-			thumbBuf, err := api.Thumbnails.Get(thumbPath)
-			if err != nil {
+			thumbBuf, _ := api.Thumbnails.Get(thumbPath)
+			if thumbBuf == nil {
 				srcBuf, err := api.Originals.Get(path)
 				if err != nil {
 					respondWithErr(w, http.StatusNotFound)
@@ -106,13 +113,18 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 				}
 				go api.Thumbnails.Put(thumbPath, thumbBuf)
 			}
-			et := etag.Generate(thumbBuf, true)
-			api.Etags.Add(et)
-			if r.Header.Get("If-None-Match") == et {
-				respondWithStatusCode(w, http.StatusNotModified)
-				return
+			imgResponse := &ImageResponse{buf: thumbBuf}
+			if config.C.EtagCacheEnable {
+				etg := etag.Generate(thumbBuf, true)
+				api.Etags.Add(etg)
+				if r.Header.Get("If-None-Match") == etg {
+					respondWithStatusCode(w, http.StatusNotModified)
+					return
+				}
+				imgResponse.etag = etg
 			}
-			respondWithImage(w, imager.GetImageType(thumbBuf), thumbBuf, et)
+			imgResponse.format = imager.GetImageType(thumbBuf)
+			respondWithImage(w, imgResponse)
 		})
 	}
 }
@@ -134,12 +146,12 @@ func (api *Api) handleCreates() http.HandlerFunc {
 			reader = r.Body
 		}
 		filename = mux.Vars(r)["path"]
-		buf, err := ioutil.ReadAll(io.LimitReader(reader, uploadSizeLimit))
+		buf, err := ioutil.ReadAll(io.LimitReader(reader, config.C.UploadMaxSize))
 		if len(buf) == 0 || err != nil {
 			respondWithErr(w, http.StatusBadRequest)
 			return
 		}
-		if len(buf) == uploadSizeLimit {
+		if int64(len(buf)) == config.C.UploadMaxSize {
 			respondWithErr(w, http.StatusRequestEntityTooLarge)
 			return
 		}
