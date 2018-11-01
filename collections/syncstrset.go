@@ -34,21 +34,6 @@ func (s *SyncStrSet) Size() int {
 	return len(s.vals)
 }
 
-// List returns the values of the SyncStrSet as a slice
-func (s *SyncStrSet) Slice() []string {
-	s.RLock()
-	defer s.RUnlock()
-	keys := make([]string, len(s.vals))
-	i := 0
-	for k := range s.vals {
-		s.RUnlock()
-		keys[i] = k
-		i++
-		s.RLock()
-	}
-	return keys
-}
-
 // Contains returns true if the value is present in the SyncStrSet
 func (s *SyncStrSet) Contains(vals ...string) bool {
 	s.RLock()
@@ -109,4 +94,18 @@ func (s *SyncStrSet) Remove(x string) {
 	if x != "" {
 		delete(s.vals, x)
 	}
+}
+
+func (s *SyncStrSet) slice() []string {
+	s.RLock()
+	defer s.RUnlock()
+	keys := make([]string, len(s.vals))
+	i := 0
+	for k := range s.vals {
+		s.RUnlock()
+		keys[i] = k
+		i++
+		s.RLock()
+	}
+	return keys
 }

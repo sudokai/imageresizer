@@ -20,7 +20,7 @@ func TestSyncStrSet_Intersect(t *testing.T) {
 func TestSyncStrSet_Slice(t *testing.T) {
 	set := NewSyncStrSet()
 	set.Add("a", "b", "c", "d")
-	slice := set.Slice()
+	slice := set.slice()
 	for _, x := range []string{"a", "b", "c", "d"} {
 		var found bool
 		for _, v := range slice {
