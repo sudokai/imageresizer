@@ -57,18 +57,13 @@ func (sm *ShardedMap) HasKey(key string) bool {
 }
 
 func (sm *ShardedMap) GetRand() interface{} {
-	checkExit := true
-	for {
-		if rnd := sm.shards[rand.Intn(len(sm.shards))].GetRand(); rnd != nil {
+	x := rand.Intn(len(sm.shards))
+	for i := x; i < x+len(sm.shards); i++ {
+		if rnd := sm.shards[i%len(sm.shards)].GetRand(); rnd != nil {
 			return rnd
 		}
-		if checkExit {
-			if sm.Size() == 0 {
-				return nil
-			}
-			checkExit = false
-		}
 	}
+	return nil
 }
 
 func (sm *ShardedMap) getShard(key string) *SyncMap {
