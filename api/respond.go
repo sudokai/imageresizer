@@ -10,8 +10,8 @@ import (
 
 type ImageResponse struct {
 	format imager.ImageType
-	buf []byte
-	etag string
+	buf    []byte
+	etag   string
 }
 
 var mimeTypes = map[imager.ImageType]string{

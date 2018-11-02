@@ -33,10 +33,10 @@ func TestShardedMap_GetRand(t *testing.T) {
 		ch <- sm.GetRand()
 	}()
 	select {
-		case <-ch:
-			break
-		case <-time.After(time.Second):
-			t.Errorf("GetRand hang")
+	case <-ch:
+		break
+	case <-time.After(time.Second):
+		t.Errorf("GetRand hang")
 	}
 
 	sm.Put("a", 1)

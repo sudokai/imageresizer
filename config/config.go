@@ -13,10 +13,10 @@ type Config struct {
 
 	LocalPrefix string
 
-	S3Enable             bool
-	S3Region             string
-	S3Bucket             string
-	S3Prefix             string
+	S3Enable bool
+	S3Region string
+	S3Bucket string
+	S3Prefix string
 
 	CacheOrigEnable      bool
 	CacheOrigPath        string

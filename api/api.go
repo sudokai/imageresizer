@@ -30,9 +30,9 @@ func NewApi(ready chan<- bool) *Api {
 	if config.C.S3Enable {
 		var err error
 		origStore, err = store.NewS3Store(&store.S3Config{
-			Region:          config.C.S3Region,
-			Bucket:          config.C.S3Bucket,
-			Prefix:          config.C.S3Prefix,
+			Region: config.C.S3Region,
+			Bucket: config.C.S3Bucket,
+			Prefix: config.C.S3Prefix,
 		})
 		if err != nil {
 			log.Fatalln("S3 store could not be initialized")

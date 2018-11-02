@@ -105,7 +105,7 @@ func (fc *FileCache) PruneCache() error {
 func (fc *FileCache) LoadCache(walkFn func(item interface{}) error) error {
 	count := 0
 	t := time.Now()
-	threshold := time.Duration(config.C.CacheLoaderThreshold)*time.Millisecond
+	threshold := time.Duration(config.C.CacheLoaderThreshold) * time.Millisecond
 	return filepath.Walk(fc.root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
