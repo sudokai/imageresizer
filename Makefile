@@ -19,6 +19,7 @@ clean:
 	rm -f $(BINARY_NAME)
 dep:
 	$(GOGET) github.com/aws/aws-sdk-go
+	$(GOGET) github.com/cespare/xxhash
 	$(GOGET) github.com/cloudflare/tableflip
 	$(GOGET) github.com/djherbis/atime
 	$(GOGET) github.com/gorilla/mux
