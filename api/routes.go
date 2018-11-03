@@ -63,15 +63,16 @@ func (api *Api) serveOriginals() http.HandlerFunc {
 				return
 			}
 			imgResponse := &ImageResponse{buf: buf}
+
+			etg := etag.Generate(buf, true)
 			if config.C.EtagCacheEnable {
-				etg := etag.Generate(buf, true)
 				api.Etags.Add(etg)
-				if r.Header.Get("If-None-Match") == etg {
-					respondWithStatusCode(w, http.StatusNotModified)
-					return
-				}
-				imgResponse.etag = etg
 			}
+			if r.Header.Get("If-None-Match") == etg {
+				respondWithStatusCode(w, http.StatusNotModified)
+				return
+			}
+			imgResponse.etag = etg
 			imgResponse.format = imager.GetImageType(buf)
 			respondWithImage(w, imgResponse)
 		})
@@ -114,15 +115,16 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 				go api.Thumbnails.Put(thumbPath, thumbBuf)
 			}
 			imgResponse := &ImageResponse{buf: thumbBuf}
+
+			etg := etag.Generate(thumbBuf, true)
 			if config.C.EtagCacheEnable {
-				etg := etag.Generate(thumbBuf, true)
 				api.Etags.Add(etg)
-				if r.Header.Get("If-None-Match") == etg {
-					respondWithStatusCode(w, http.StatusNotModified)
-					return
-				}
-				imgResponse.etag = etg
 			}
+			if r.Header.Get("If-None-Match") == etg {
+				respondWithStatusCode(w, http.StatusNotModified)
+				return
+			}
+			imgResponse.etag = etg
 			imgResponse.format = imager.GetImageType(thumbBuf)
 			respondWithImage(w, imgResponse)
 		})

@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/kxlt/imageresizer/config"
 	"github.com/kxlt/imageresizer/imager"
 	"net/http"
 	"strconv"
@@ -22,9 +21,7 @@ var mimeTypes = map[imager.ImageType]string{
 func respondWithImage(w http.ResponseWriter, imgResponse *ImageResponse) {
 	w.Header().Set("Content-Type", mimeTypes[imgResponse.format])
 	w.Header().Set("Content-Length", strconv.Itoa(len(imgResponse.buf)))
-	if config.C.EtagCacheEnable {
-		w.Header().Set("ETag", imgResponse.etag)
-	}
+	w.Header().Set("ETag", imgResponse.etag)
 	w.WriteHeader(http.StatusOK)
 	w.Write(imgResponse.buf)
 }
