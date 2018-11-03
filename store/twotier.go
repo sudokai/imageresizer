@@ -9,9 +9,9 @@ func (s *TwoTier) Get(filename string) ([]byte, error) {
 	var buf []byte
 	var err error
 	if s.Cache != nil {
-		buf, err = s.Cache.Get(filename)
+		buf, _ = s.Cache.Get(filename)
 	}
-	if err != nil {
+	if buf == nil {
 		buf, err = s.Store.Get(filename)
 		if err != nil {
 			return nil, err
