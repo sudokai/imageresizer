@@ -24,10 +24,13 @@ func (s *TwoTier) Get(filename string) ([]byte, error) {
 }
 
 func (s *TwoTier) Put(filename string, data []byte) error {
+	err := s.Store.Put(filename, data)
+	if err != nil {
+		return err
+	}
 	if s.Cache != nil {
 		go s.Cache.Put(filename, data)
 	}
-	return s.Store.Put(filename, data)
 }
 
 func (s *TwoTier) Remove(filename string) error {
