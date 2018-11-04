@@ -3,9 +3,11 @@ package store
 import (
 	"bytes"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"os"
 )
 
 type S3Store struct {
@@ -47,6 +49,10 @@ func (s *S3Store) Get(filename string) ([]byte, error) {
 			Key:    aws.String(s.prefix + "/" + filename),
 		})
 	if err != nil {
+		s3err, ok := err.(awserr.RequestFailure)
+		if ok && s3err.StatusCode() == 404 {
+			return nil, os.ErrNotExist
+		}
 		return nil, err
 	}
 	return writeAtBuf.Bytes(), nil
