@@ -31,6 +31,7 @@ func (s *TwoTier) Put(filename string, data []byte) error {
 	if s.Cache != nil {
 		go s.Cache.Put(filename, data)
 	}
+	return nil
 }
 
 func (s *TwoTier) Remove(filename string) error {
