@@ -78,6 +78,10 @@ Supported `extend` settings (fit then extend edges until target size):
 
 Photo | Result
 ------|--------
+[Original](https://unsplash.com/photos/yUWKDfPLp6w)[*@samuelclara](https://unsplash.com/@samuelclara) (2400x1600) | ![Original](./testdata/samuel-clara-69657-unsplash.jpg)
+`480x640/crop/s` | ![480x640/crop/s](./testdata/480x640/crop/s/samuel-clara-69657-unsplash.jpg)
+`480x640/crop/c` | ![480x640/crop/c](./testdata/480x640/crop/c/samuel-clara-69657-unsplash.jpg)
+`480x640/fit/0` | ![480x640/fit/0](./testdata/480x640/fit/0/samuel-clara-69657-unsplash.jpg)
 [Original](https://unsplash.com/photos/BqD0Id4qemc) [*@natcatalyst*](https://unsplash.com/@natcatalyst) (3456×5184) | ![Original](./testdata/natasha-kasim-708827-unsplash.jpg)
 `300/crop/s` | ![300x300 smart crop](./testdata/300x300/crop/s/natasha-kasim-708827-unsplash.jpg)
 `500/fit/000000` | ![500x500 fit](./testdata/500x500/fit/000000/natasha-kasim-708827-unsplash.jpg)
