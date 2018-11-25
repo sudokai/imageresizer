@@ -1,7 +1,7 @@
 module github.com/kxlt/imageresizer
 
 require (
-	github.com/aws/aws-sdk-go v1.15.59
+	github.com/aws/aws-sdk-go v1.15.81
 	github.com/cespare/xxhash v1.1.0
 	github.com/cloudflare/tableflip v0.0.0-20181019105324-78281f93d075
 	github.com/djherbis/atime v1.0.0

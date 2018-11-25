@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -22,17 +23,37 @@ import (
 const pathMatch = "{path:.+}"
 
 func (api *Api) routes() {
+	base := "/"
+	if config.C.SecureLinksEnabled {
+		base = api.secureBasePath(base)
+	}
+
 	api.Handle("/favicon.ico", api.handle404())
 	api.Handle("/debug/metrics", http.DefaultServeMux)
-	// shortcut
-	api.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/"+pathMatch,
+
+	fmt.Printf("Base path: %s\n", base)
+	r := api.PathPrefix( base ).Subrouter() // shortcut
+	r.HandleFunc("/{width:[1-9][0-9]*}/{resizeOp}/{options}/"+pathMatch,
 		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/"+pathMatch,
+	r.HandleFunc("/{width:[1-9][0-9]*}x{height:[1-9][0-9]*}/{resizeOp}/{options}/"+pathMatch,
 		api.etagMiddleware(api.serveThumbs())).Methods("GET", "HEAD")
-	api.HandleFunc("/"+pathMatch, api.etagMiddleware(api.serveOriginals())).
+	r.HandleFunc("/"+pathMatch, api.etagMiddleware(api.serveOriginals())).
 		Methods("GET", "HEAD")
-	api.HandleFunc("/"+pathMatch, api.handleCreates()).Methods("POST")
-	api.HandleFunc("/"+pathMatch, api.handleDeletes()).Methods("DELETE")
+	r.HandleFunc("/"+pathMatch, api.handleCreates()).Methods("POST")
+	r.HandleFunc("/"+pathMatch, api.handleDeletes()).Methods("DELETE")
+}
+
+func (api *Api) secureBasePath(base string) string {
+	hash := md5.Sum([]byte(config.C.SecureLinksSecret))
+	base = fmt.Sprintf("/%x", hash)
+	api.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, base) {
+			api.handle403().ServeHTTP(w, r)
+			return
+		}
+		api.handle404().ServeHTTP(w, r)
+	})
+	return base
 }
 
 func (api *Api) etagMiddleware(h http.HandlerFunc) http.HandlerFunc {
@@ -179,6 +200,12 @@ func (api *Api) handleDeletes() http.HandlerFunc {
 			api.removeThumbnails(path)
 			respondWithStatusCode(w, http.StatusNoContent)
 		})
+	}
+}
+
+func (api *Api) handle403() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		respondWithErr(w, http.StatusForbidden)
 	}
 }
 
