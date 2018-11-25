@@ -11,6 +11,9 @@ import (
 type Config struct {
 	ServerAddr string
 
+	SecureLinksEnabled bool
+	SecureLinksSecret  string
+
 	LocalPrefix string
 
 	S3Enable bool
@@ -44,6 +47,8 @@ func init() {
 	viper.AutomaticEnv()
 
 	viper.SetDefault("server.addr", ":8080")
+	viper.SetDefault("secure.links.enabled", false)
+	viper.SetDefault("secure.links.secret", "secret")
 	viper.SetDefault("local.prefix", "./images/originals")
 	viper.SetDefault("s3.enable", false)
 	viper.SetDefault("s3.prefix", "")
@@ -64,6 +69,9 @@ func init() {
 }
 
 func RefreshConfig() {
+	C.ServerAddr = viper.GetString("server.addr")
+	C.SecureLinksEnabled = viper.GetBool("secure.links.enabled")
+	C.SecureLinksSecret = viper.GetString("secure.links.secret")
 	C.ServerAddr = viper.GetString("server.addr")
 	C.LocalPrefix = viper.GetString("local.prefix")
 	C.S3Enable = viper.GetBool("s3.enable")
