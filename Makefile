@@ -8,7 +8,7 @@ GOGET=$(GOCMD) get
 
 all: test build
 build:
-	$(GOBUILD) -o $(BINARY_NAME) -v
+	$(GOBUILD) -ldflags="-s -w" -o $(BINARY_NAME) -v
 test:
 	$(GOTEST) -v ./...
 run:
