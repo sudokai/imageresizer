@@ -55,7 +55,7 @@ func TestSyncMap_Remove(t *testing.T) {
 func TestSyncMap_GetRand(t *testing.T) {
 	sm := NewSyncMap()
 
-	if sm.GetRand() != nil {
+	if sm.GetEvictable() != nil {
 		t.Errorf("GetRand failed")
 	}
 
@@ -66,7 +66,7 @@ func TestSyncMap_GetRand(t *testing.T) {
 	counts := []int{0, 0, 0, 0}
 
 	for i := 0; i < 100000; i++ {
-		counts[sm.GetRand().(int)]++
+		counts[sm.GetEvictable().(int)]++
 	}
 
 	for _, x := range counts {

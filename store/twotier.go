@@ -2,7 +2,7 @@ package store
 
 type TwoTier struct {
 	Store Store
-	Cache Cache
+	Cache Store
 }
 
 func (s *TwoTier) Get(filename string) ([]byte, error) {
@@ -39,18 +39,4 @@ func (s *TwoTier) Remove(filename string) error {
 		go s.Cache.Remove(filename)
 	}
 	return s.Store.Remove(filename)
-}
-
-func (s *TwoTier) PruneCache() error {
-	if s.Cache == nil {
-		return nil
-	}
-	return s.Cache.PruneCache()
-}
-
-func (s *TwoTier) LoadCache(walkFn func(item interface{}) error) error {
-	if s.Cache == nil {
-		return nil
-	}
-	return s.Cache.LoadCache(walkFn)
 }

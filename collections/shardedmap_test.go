@@ -30,7 +30,7 @@ func TestShardedMap_GetRand(t *testing.T) {
 	sm := NewShardedMap(64)
 	ch := make(chan interface{}, 1)
 	go func() {
-		ch <- sm.GetRand()
+		ch <- sm.GetEvictable()
 	}()
 	select {
 	case <-ch:
@@ -42,7 +42,7 @@ func TestShardedMap_GetRand(t *testing.T) {
 	sm.Put("a", 1)
 	count := 0
 	for i := 0; i < 6400; i++ {
-		if sm.GetRand() != nil {
+		if sm.GetEvictable() != nil {
 			count++
 		}
 	}

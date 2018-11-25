@@ -44,22 +44,14 @@ func (sm *ShardedMap) Remove(key string) {
 	sm.getShard(key).Remove(key)
 }
 
-func (sm *ShardedMap) Size() int {
-	var size int
-	for i := 0; i < len(sm.shards); i++ {
-		size += sm.shards[i].Size()
-	}
-	return size
-}
-
 func (sm *ShardedMap) HasKey(key string) bool {
 	return sm.getShard(key).HasKey(key)
 }
 
-func (sm *ShardedMap) GetRand() interface{} {
+func (sm *ShardedMap) GetEvictable() interface{} {
 	x := rand.Intn(len(sm.shards))
 	for i := x; i < x+len(sm.shards); i++ {
-		if rnd := sm.shards[i%len(sm.shards)].GetRand(); rnd != nil {
+		if rnd := sm.shards[i%len(sm.shards)].GetEvictable(); rnd != nil {
 			return rnd
 		}
 	}

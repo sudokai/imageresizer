@@ -8,7 +8,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	"log"
-	"path"
 	"time"
 )
 
@@ -19,13 +18,13 @@ func init() {
 // Api type embeds a router
 type Api struct {
 	Originals  *store.TwoTier
-	Thumbnails store.Cache
+	Thumbnails store.Store
 	Tiers      *collections.SyncStrSet
 	Etags      *collections.SyncStrSet
 	*mux.Router
 }
 
-func NewApi(ready chan<- bool) *Api {
+func NewApi() *Api {
 	var origStore store.Store
 	if config.C.S3Enable {
 		var err error
@@ -40,19 +39,17 @@ func NewApi(ready chan<- bool) *Api {
 	} else {
 		origStore = store.NewFileStore(config.C.LocalPrefix)
 	}
-	var origCache store.Cache
+	var origCache store.Store
 	if config.C.CacheOrigEnable {
 		origCache = store.NewFileCache(
 			config.C.CacheOrigPath,
-			config.C.CacheOrigMaxSize,
-			config.C.CacheOrigShards)
+			config.C.CacheOrigMaxSize)
 	}
-	var thumbCache store.Cache
+	var thumbCache store.Store
 	if config.C.CacheThumbEnable {
 		thumbCache = store.NewFileCache(
 			config.C.CacheThumbPath,
-			config.C.CacheThumbMaxSize,
-			config.C.CacheThumbShards)
+			config.C.CacheThumbMaxSize)
 	} else {
 		thumbCache = &store.NoopCache{}
 	}
@@ -70,42 +67,11 @@ func NewApi(ready chan<- bool) *Api {
 		Etags:      etags,
 		Router:     mux.NewRouter().StrictSlash(true),
 	}
-	go api.initCacheLoader(ready)
-	api.initCacheManager()
 	if config.C.EtagCacheEnable {
 		api.initEtagManager()
 	}
 	api.routes()
 	return api
-}
-
-func (api *Api) initCacheLoader(ready chan<- bool) {
-	log.Println("Loading caches...")
-	err := api.Originals.LoadCache(nil)
-	if err != nil {
-		ready <- false
-		return
-	}
-	api.Thumbnails.LoadCache(func(item interface{}) error {
-		filename := item.(string)
-		api.Tiers.Add(path.Dir(filename))
-		return nil
-	})
-	if err != nil {
-		ready <- false
-		return
-	}
-	ready <- true
-	log.Println("Caches loaded")
-}
-
-func (api *Api) initCacheManager() {
-	go func() {
-		for range time.Tick(50 * time.Millisecond) {
-			api.Originals.PruneCache()
-			api.Thumbnails.PruneCache()
-		}
-	}()
 }
 
 func (api *Api) initEtagManager() {

@@ -56,14 +56,9 @@ func main() {
 		log.Fatalln("Can't listen:", err)
 	}
 
-	ready := make(chan bool, 1)
-	server := &http.Server{Handler: api.NewApi(ready)}
+	server := &http.Server{Handler: api.NewApi()}
 
 	go server.Serve(ln)
-
-	if !<-ready {
-		log.Fatalln(err)
-	}
 
 	if err := upg.Ready(); err != nil {
 		log.Fatalln(err)

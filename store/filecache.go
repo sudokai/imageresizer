@@ -15,26 +15,25 @@ import "path"
 
 type FileCache struct {
 	root     string
-	metadata collections.Map
+	metadata collections.EvictableMap
 	size     int64
 	maxSize  int64
 }
 
-type file struct {
-	filename string
-	atime    time.Time
-	size     int64
-}
-
-func NewFileCache(root string, maxSize int64, nShards int) *FileCache {
+func NewFileCache(root string, maxSize int64) *FileCache {
 	if _, err := os.Stat(root); os.IsNotExist(err) {
-		os.MkdirAll(root, 0755)
+		err := os.MkdirAll(root, 0755)
+		if err != nil {
+			return nil
+		}
 	}
-	return &FileCache{
+	fc := &FileCache{
 		root:     root,
-		metadata: collections.NewShardedMap(nShards),
+		metadata: collections.NewShardedMap(256),
 		maxSize:  maxSize,
 	}
+	go fc.loadCache()
+	return fc
 }
 
 func (fc *FileCache) Get(filename string) ([]byte, error) {
@@ -47,10 +46,10 @@ func (fc *FileCache) Get(filename string) ([]byte, error) {
 	}
 
 	if !fc.metadata.HasKey(filename) {
-		fc.metadata.Put(filename, file{filename: filename, size: int64(len(buf)), atime: time.Now()})
+		fc.metadata.Put(filename, &Metadata{filename: filename, size: int64(len(buf)), atime: time.Now()})
 	} else {
 		// update timestamp
-		file := fc.metadata.Get(filename).(file)
+		file := fc.metadata.Get(filename).(*Metadata)
 		file.atime = time.Now()
 		fc.metadata.Put(filename, file)
 	}
@@ -69,8 +68,9 @@ func (fc *FileCache) Put(filename string, buf []byte) error {
 		return err
 	}
 	size := int64(len(buf))
-	fc.metadata.Put(filename, file{filename: filename, size: size, atime: time.Now()})
+	fc.metadata.Put(filename, &Metadata{filename: filename, size: size, atime: time.Now()})
 	atomic.AddInt64(&fc.size, size)
+	fc.pruneCache()
 	return nil
 }
 
@@ -81,28 +81,28 @@ func (fc *FileCache) Remove(filename string) error {
 	}
 	p := fc.metadata.Get(filename)
 	if p != nil {
-		m := p.(file)
+		m := p.(*Metadata)
 		atomic.AddInt64(&fc.size, -m.size)
 		fc.metadata.Remove(filename)
 	}
 	return nil
 }
 
-func (fc *FileCache) PruneCache() error {
-	var oldest *file
+func (fc *FileCache) pruneCache() error {
+	var oldest *Metadata
 	if fc.maxSize <= 0 || atomic.LoadInt64(&fc.size) <= fc.maxSize {
 		return nil
 	}
 	for i := 0; i < 10; i++ {
-		f := fc.metadata.GetRand().(file)
-		if oldest == nil || f.atime.Before(oldest.atime) {
-			oldest = &f
+		metadata := fc.metadata.GetEvictable().(*Metadata)
+		if oldest == nil || metadata.atime.Before(oldest.atime) {
+			oldest = metadata
 		}
 	}
 	return fc.Remove(oldest.filename)
 }
 
-func (fc *FileCache) LoadCache(walkFn func(item interface{}) error) error {
+func (fc *FileCache) loadCache() error {
 	count := 0
 	t := time.Now()
 	threshold := time.Duration(config.C.CacheLoaderThreshold) * time.Millisecond
@@ -114,11 +114,9 @@ func (fc *FileCache) LoadCache(walkFn func(item interface{}) error) error {
 			return nil
 		}
 		filename := strings.Split(path, fc.root+"/")[1]
-		fc.metadata.Put(filename, file{filename: filename, size: info.Size(), atime: atime.Get(info)})
+		fc.metadata.Put(filename, &Metadata{filename: filename, size: info.Size(), atime: atime.Get(info)})
 		atomic.AddInt64(&fc.size, info.Size())
-		if walkFn != nil {
-			walkFn(filename)
-		}
+		fc.pruneCache()
 		count++
 		if count%config.C.CacheLoaderFiles == 0 || time.Since(t) > threshold {
 			time.Sleep(time.Duration(config.C.CacheLoaderSleep) * time.Millisecond)

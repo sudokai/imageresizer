@@ -74,12 +74,6 @@ func (sm *SyncMap) Remove(key string) {
 	sm.indexed = sm.indexed[:lastIdx]
 }
 
-func (sm *SyncMap) Size() int {
-	sm.RLock()
-	defer sm.RUnlock()
-	return len(sm.indexed)
-}
-
 func (sm *SyncMap) HasKey(key string) bool {
 	sm.RLock()
 	defer sm.RUnlock()
@@ -87,12 +81,15 @@ func (sm *SyncMap) HasKey(key string) bool {
 	return ok
 }
 
-func (sm *SyncMap) GetRand() interface{} {
+func (sm *SyncMap) GetEvictable() interface{} {
 	sm.RLock()
-	defer sm.RUnlock()
 	if len(sm.indexed) == 0 {
+		sm.RUnlock()
 		return nil
 	}
+	sm.RUnlock()
+	sm.RLock()
 	elem := sm.indexed[rand.Intn(len(sm.indexed))]
-	return sm.Get(elem.key)
+	sm.RUnlock()
+	return elem.val
 }
