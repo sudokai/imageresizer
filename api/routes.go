@@ -93,7 +93,8 @@ func (api *Api) serveThumbs() http.HandlerFunc {
 				vars["resizeOp"],
 				vars["options"])
 			path := vars["path"]
-			thumbPath := resizeTier + "/" + path
+			thumbPath, _ := api.Originals.RemoteToLocalPath(path)
+			thumbPath = resizeTier + "/" + thumbPath
 			api.Tiers.Add(resizeTier)
 			thumbBuf, _ := api.Thumbnails.Get(thumbPath)
 			if thumbBuf == nil {

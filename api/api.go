@@ -68,7 +68,7 @@ func NewApi(ready chan<- bool) *Api {
 		Thumbnails: thumbCache,
 		Tiers:      collections.NewSyncStrSet(),
 		Etags:      etags,
-		Router:     mux.NewRouter().StrictSlash(true),
+		Router:     mux.NewRouter().StrictSlash(true).SkipClean(true),
 	}
 	go api.initCacheLoader(ready)
 	api.initCacheManager()

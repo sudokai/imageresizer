@@ -1,20 +1,46 @@
 package store
 
+import (
+	"errors"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"path/filepath"
+)
+
 type TwoTier struct {
 	Store Store
 	Cache Cache
 }
 
-func (s *TwoTier) Get(filename string) ([]byte, error) {
+func (s *TwoTier) Get(aurl string) ([]byte, error) {
 	var buf []byte
 	var err error
+	filename, isRemote := s.RemoteToLocalPath(aurl)
+
 	if s.Cache != nil {
 		buf, _ = s.Cache.Get(filename)
 	}
 	if buf == nil {
 		buf, err = s.Store.Get(filename)
 		if err != nil {
-			return nil, err
+			if !isRemote {
+				return nil, err
+			} else {
+				response, err := http.Get(aurl)
+				if err != nil {
+					return nil, err
+				}
+				if response.StatusCode >= 400 {
+					return nil, errors.New("(" + response.Request.URL.String() + ") HTTP Error: " + response.Status)
+				}
+				defer response.Body.Close()
+				buf, err = ioutil.ReadAll(response.Body)
+				if err != nil {
+					return nil, err
+				}
+				err = s.Store.Put(filename, buf)
+			}
 		}
 		if s.Cache != nil {
 			go s.Cache.Put(filename, buf)
@@ -53,4 +79,19 @@ func (s *TwoTier) LoadCache(walkFn func(item interface{}) error) error {
 		return nil
 	}
 	return s.Cache.LoadCache(walkFn)
+}
+
+func (s *TwoTier) RemoteToLocalPath(path string) (string, bool) {
+	var localPath string
+	var isRemote bool
+
+	aurl, _ := url.Parse(path)
+	if aurl.Scheme != "" {
+		isRemote = true
+		localPath = filepath.Join(aurl.Hostname(), aurl.EscapedPath())
+	} else {
+		isRemote = false
+		localPath = path
+	}
+	return localPath, isRemote
 }
